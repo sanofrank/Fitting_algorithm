@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,700,900&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Roboto+Slab:400,700&display=swap');
+
+body{
+    font-family: 'Roboto' , sans-serif;
+    counter-reset: chapternum;
+}
+
+@page{
+    size: A5;
+    margin: 20mm 25mm;
+
+}
+
+@page:blank {
+    @top-left-corner{ content: none; }
+    @top-left{ content: none; }
+    @top-center{ content: none; }
+    @top-right{ content: none; }
+    @top-right-corner{ content: none; }
+    @right-top{ content: none; }
+    @right-middle{ content: none; }
+    @right-bottom{ content: none; }
+    @bottom-right-corner{ content: none; }
+    @bottom-right{ content: none; }
+    @bottom-center{ content: none; }
+    @bottom-left{ content: none; }
+    @bottom-left-corner{ content: none; }
+    @left-bottom{ content: none; }
+    @left-middle{ content: none; }
+    @left-top{ content: none; }
+  }
+
+@page :left {
+    margin: 20mm 30mm 20mm 20mm;
+    @bottom-left{
+        content: counter(page);
+    }
+    @top-left{
+        font-family: 'Roboto Slab', serif;
+        font-size: 80%;
+        font-style: italic;
+        content: string(chapter);
+    }
+}
+
+@page :right {
+    margin: 20mm 20mm 20mm 30mm;
+    @bottom-right{
+        content: counter(page);
+    }
+    @top-right{
+        font-family: 'Roboto Slab', serif;
+        font-size: 80%;
+        font-style: italic;
+        content: string(chapter);
+    }
+}
+
+@page:first {
+    margin: 0;
+    background: url("TheStrangeCase_files/jekyllhydecover2.jpg");
+    background-position: center;
+    background-size: 104%;
+    background-repeat: no-repeat;
+  
+    @top-left{ content: none; }
+    @top-center{ content: none; }
+    @top-right{ content: none; }
+    @bottom-left{ content: none; }
+  }
+
+div.toc ol li.toc-chap a::after{
+    content: " " target-counter(attr(href), page);
+}
+
+
+p, .chapter-title, h3, #index{
+    font-family: 'Roboto Slab', serif;
+} 
+
+a{
+    color: black;
+    text-decoration: none;
+    }
+
+
+p{  
+    text-align: justify;
+    hyphens: auto;
+    font-size: 80%;
+    /*column-count: 3;*/
+
+}
+
+#first-page,#index,h3{
+    break-before: right;
+}
+
+
+#absolute-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 80%
+  }
+  
+  #absolute-bottom p {
+    font-family: 'spectral', sans-serif;
+    text-align: left;
+    font-size: 9px;
+    text-indent: 0;
+    margin-top: 15px;
+  }
+
+pre, #cover{
+    page-break-after: always
+}
+#first-page{
+    float:left;
+    margin: 1in 0.7in 0 0;
+    font-size: 150%;
+}
+
+#title, #author{
+    margin: auto;
+}
+#author{
+    font-weight: 100;
+}
+#title{
+    font-weight: 700;
+}
+
+.chapter-title,h2{
+    text-align: center;
+    margin-bottom: 1in;
+    font-weight: normal;
+}
+
+hr{
+    margin: 0 1.7in;
+}
+
+h3{
+    counter-increment: chapternum;
+    font-weight: 100;
+    text-align: center;
+    margin: 0.7in 0 0 0;
+    padding: 0;
+}
+
+h3::after{
+    content: counter(chapternum);
+}
+
+.right{
+    text-align: right;
+    break-after:avoid;
+}
+
+h2{  
+    string-set: chapter content(text);
+}
+
+
+/*body { margin-left: 20%;s
+    margin-right: 20%;
+    text-align: justify }
+
+p {text-indent: 1em;
+margin-top: 0.25em;
+margin-bottom: 0.25em; }
+
+h1, h2, h3, h4, h5, h6 {text-align: center; font-style: normal;
+font-weight: normal; line-height: 1.5; margin-top: .5em; margin-bottom:
+.5em;}
+
+h1 {font-size: 300%;
+ margin-top: 0.6em;
+ margin-bottom: 0.6em;
+ letter-spacing: 0.12em;
+ word-spacing: 0.2em;
+ text-indent: 0em;}
+h2 {font-size: 175%;}
+h3 {font-size: 150%;}
+h4 {font-size: 120%;}
+h5 {font-size: 110%;}
+
+p.right {text-align: right;
+      margin-right: 10%;
+      margin-top: 1em;
+      margin-bottom: 1em; }
+
+div.fig { display:block;
+       margin:0 auto;
+       text-align:center; }
+
+a:link {color:blue; text-decoration:none}
+a:visited {color:blue; text-decoration:none}
+a:hover {color:red}*/
+
