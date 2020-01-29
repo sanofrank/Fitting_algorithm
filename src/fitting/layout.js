@@ -54,8 +54,8 @@ class Layout {
 		}
 
 		this.maxChars = maxChars || MAX_CHARS_PER_BREAK; //1500 DEFAULT
-		
-		
+
+
 
 
 		/*this.blockEx = {
@@ -78,7 +78,7 @@ class Layout {
 			blocks: 0,
 			score: 0,
 			current_page_height: 0,
-			pages : [],
+			pages: [],
 		}
 
 		this.paragraph = {
@@ -101,10 +101,10 @@ class Layout {
 	}
 
 	//METODO MODIFICATO
-	async renderTo(wrapper, source, breakToken, bounds=this.bounds) {
+	async renderTo(wrapper, source, breakToken, bounds = this.bounds) {
 		//Al primo giro, la source è il capitolo e il breakToken è false
 		let start = this.getStart(source, breakToken);
-		console.log("Start BreakToken",start);
+		console.log("Start BreakToken", start);
 		//Start è il capitolo all'inizio
 		let walker = walk(start, source); //start: l'oggetto d'attraversare, source The "className" for the root object
 
@@ -116,10 +116,10 @@ class Layout {
 
 		let iterator = 0;
 
-		
 
 
-		
+
+
 
 
 
@@ -134,13 +134,13 @@ class Layout {
 			console.log("next.value", node);
 			done = next.done; //true una volta terminato (callback)
 
-			if (!node) { 
+			if (!node) {
 				this.hooks && this.hooks.layout.trigger(wrapper, this);
 				let imgs = wrapper.querySelectorAll("img");
 				if (imgs.length) { //Se è un' immagine, cerca la grandezza
-					await this.waitForImages(imgs); 
+					await this.waitForImages(imgs);
 				}
-				
+
 				newBreakToken = this.findBreakToken(wrapper, source, bounds);
 
 				return blocks;
@@ -171,157 +171,157 @@ class Layout {
 
 			// Should the Node be a shallow or deep clone
 			let shallow = isContainer(node); //Valore boolean che si attiva nel caso sia un tipo DIV
-			console.log(node,wrapper,"Breaktoken", breakToken,shallow);
+			console.log(node, wrapper, "Breaktoken", breakToken, shallow);
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
 			let rendered = this.appendModified(node, wrapper, shallow);
-			console.log("rendered.textContent",rendered);
+			console.log("rendered.textContent", rendered);
 
 			//Se è testo prendo le informazioni e rimuovo il blocco dalla pagina.
-			if(isText(rendered.firstChild)){
-						console.log("isText", rendered.textContent);
+			if (isText(rendered.firstChild)) {
+				console.log("isText", rendered.textContent);
 
-						let normBlock =  {
-							tagName: "",
-							ref: "",
-							width : 0,
-							height : 0,
-							left : 0,
-							right: 0,
-							lines: []
-						}
+				let normBlock = {
+					tagName: "",
+					ref: "",
+					width: 0,
+					height: 0,
+					left: 0,
+					right: 0,
+					lines: []
+				};
 
-						let exBlock =  {
-							tagName: "",
-							ref: "",
-							width : 0,
-							height : 0,
-							left : 0,
-							right: 0,
-							lines: []
-						}
+				let exBlock = {
+					tagName: "",
+					ref: "",
+					width: 0,
+					height: 0,
+					left: 0,
+					right: 0,
+					lines: []
+				};
 
-						let redBlock =  {
-							tagName: "",
-							ref: "",
-							width : 0,
-							height : 0,
-							left : 0,
-							right: 0,
-							lines: []
-						}
+				let redBlock = {
+					tagName: "",
+					ref: "",
+					width: 0,
+					height: 0,
+					left: 0,
+					right: 0,
+					lines: []
+				};
 
-						let blockVer = {
-							normal: {},
-							expand: {},
-							reduced: {}
-						};
+				let blockVer = {
+					normal: {},
+					expand: {},
+					reduced: {}
+				};
 
-						//Crea un blocco nuovo ogni iterazione
+				//Crea un blocco nuovo ogni iterazione
 
-						let chapterTitle = false;
-						let renderedBounding = rendered.getBoundingClientRect();
-						console.log(isText(rendered.firstChild));
-						let lines = getClientRects(rendered.firstChild); //La length sono le righe
-						console.log("node",rendered);
-						console.log("lines",lines);
-						let parent = rendered.parentNode.tagName;
+				let chapterTitle = false;
+				let renderedBounding = rendered.getBoundingClientRect();
+				console.log(isText(rendered.firstChild));
+				let lines = getClientRects(rendered.firstChild); //La length sono le righe
+				console.log("node", rendered);
+				console.log("lines", lines);
+				let parent = rendered.parentNode.tagName;
 
-						if(parent == "HEADER"){	
-							renderedBounding = rendered.parentElement.getBoundingClientRect();
-							chapterTitle = true;
-						}
+				if (parent == "HEADER") {
+					renderedBounding = rendered.parentElement.getBoundingClientRect();
+					chapterTitle = true;
+				}
 
-						normBlock.tagName = rendered.tagName;
-						console.log(normBlock.tagName);
-						normBlock.ref = rendered.getAttribute("data-ref");
-						normBlock.width = renderedBounding.width; 
-						normBlock.height = renderedBounding.height;
-						normBlock.left = renderedBounding.left;
-						normBlock.right = renderedBounding.right;
+				normBlock.tagName = rendered.tagName;
+				console.log(normBlock.tagName);
+				normBlock.ref = rendered.getAttribute("data-ref");
+				normBlock.width = renderedBounding.width;
+				normBlock.height = renderedBounding.height;
+				normBlock.left = renderedBounding.left;
+				normBlock.right = renderedBounding.right;
 
-						let line;
+				let line;
 
-						for (var i = 0; i != lines.length; i++) { //ogni riga.
-							line = lines[i];
-							console.log(line.width, lines.length);
-							normBlock.lines.push(line);
-						}; //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
+				for (var i = 0; i != lines.length; i++) { //ogni riga.
+					line = lines[i];
+					console.log(line.width, lines.length);
+					normBlock.lines.push(line);
+				}; //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
 
-						console.log("block",normBlock);
+				console.log("block", normBlock);
 
-						blocks.push(blockVer);
+				blocks.push(blockVer);
 
-						blocks[iterator].normal = normBlock;
-						
+				blocks[iterator].normal = normBlock;
 
-						
-						console.log("blocks",blocks);
 
-						if(chapterTitle){
 
-							blocks[iterator].expand = normBlock;
-							blocks[iterator].reduced = normBlock;
-							
-							rendered.parentNode.remove();
-							rendered.remove();
+				console.log("blocks", blocks);
 
-						}else{
+				if (chapterTitle) {
 
-							//Expand	
-							console.log("expand");
-							let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
-        					let currentSize = parseFloat(elementStyle);
-							rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
+					blocks[iterator].expand = normBlock;
+					blocks[iterator].reduced = normBlock;
 
-							renderedBounding = rendered.getBoundingClientRect();
-							lines = getClientRects(rendered.firstChild);
+					rendered.parentNode.remove();
+					rendered.remove();
 
-							exBlock.tagName = rendered.tagName;
-							exBlock.ref = rendered.getAttribute("data-ref");
-							exBlock.width = renderedBounding.width; 
-							exBlock.height = renderedBounding.height;
-							exBlock.left = renderedBounding.left;
-							exBlock.right = renderedBounding.right;
+				} else {
 
-							for (var i = 0; i != lines.length; i++) { //ogni riga.
-								line = lines[i];
-								exBlock.lines.push(line);
-								
-							};
+					//Expand	
+					console.log("expand");
+					let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
+					let currentSize = parseFloat(elementStyle);
+					rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
 
-							blocks[iterator].expand = exBlock;
+					renderedBounding = rendered.getBoundingClientRect();
+					lines = getClientRects(rendered.firstChild);
 
-							console.log("EXPAND", blocks[iterator].expand.height,blocks[iterator].expand.lines[lines.length-1].width);
+					exBlock.tagName = rendered.tagName;
+					exBlock.ref = rendered.getAttribute("data-ref");
+					exBlock.width = renderedBounding.width;
+					exBlock.height = renderedBounding.height;
+					exBlock.left = renderedBounding.left;
+					exBlock.right = renderedBounding.right;
 
-							//Reduce
+					for (var i = 0; i != lines.length; i++) { //ogni riga.
+						line = lines[i];
+						exBlock.lines.push(line);
 
-							rendered.style.wordSpacing = (currentSize - 0.05) + 'px';
-							
-							renderedBounding = rendered.getBoundingClientRect();
-							lines = getClientRects(rendered.firstChild);
+					};
 
-							redBlock.tagName = rendered.tagName;
-							redBlock.ref = rendered.getAttribute("data-ref");
-							redBlock.width = renderedBounding.width; 
-							redBlock.height = renderedBounding.height;
-							redBlock.left = renderedBounding.left;
-							redBlock.right = renderedBounding.right;
+					blocks[iterator].expand = exBlock;
 
-							for (var i = 0; i != lines.length; i++) { //ogni riga.
-								line = lines[i];
-								redBlock.lines.push(line);
-							};
+					console.log("EXPAND", blocks[iterator].expand.height, blocks[iterator].expand.lines[lines.length - 1].width);
 
-							blocks[iterator].reduced = redBlock;
-							rendered.remove();
-						}
-						
-						iterator = iterator +1;
+					//Reduce
 
-						};	
+					rendered.style.wordSpacing = (currentSize - 0.05) + 'px';
+
+					renderedBounding = rendered.getBoundingClientRect();
+					lines = getClientRects(rendered.firstChild);
+
+					redBlock.tagName = rendered.tagName;
+					redBlock.ref = rendered.getAttribute("data-ref");
+					redBlock.width = renderedBounding.width;
+					redBlock.height = renderedBounding.height;
+					redBlock.left = renderedBounding.left;
+					redBlock.right = renderedBounding.right;
+
+					for (var i = 0; i != lines.length; i++) { //ogni riga.
+						line = lines[i];
+						redBlock.lines.push(line);
+					};
+
+					blocks[iterator].reduced = redBlock;
+					rendered.remove();
+				}
+
+				iterator = iterator + 1;
+
+			};
 
 			//length += rendered.textContent.length; //Textlength in page, Prende solo la lunghezza del testo, se ha un container, giustamente non prende niente
-			console.log("length",length);
+			console.log("length", length);
 			// Check if layout has content yet
 			if (!hasRenderedContent) {
 				hasRenderedContent = hasContent(node);
@@ -359,232 +359,178 @@ class Layout {
 	}
 
 
-	getSequence(blocks,wrapper,contents,bounds=this.bounds){
+	getArraySequence(blocks, bounds = this.bounds) {
 
-		let i = 0;
 		let A = []; // Array di sequenze
-		let temp = [];
 		let pageHeight = bounds.height;
-		let pages = 0;
+		let complete;
 
-		for(const [index,block] of blocks.entries()){
+		for (const [index, block] of blocks.entries()) {
 			//creo l'array di sequenze e itero all'interno.
 			//all'inizio inserisco subito tutto dentro. 
-			if(index == 0){ //Se è il primo blocco devo creare le tre sequenze iniziali da cui poi far partire l'iterazione
-				for(let prop of Object.entries(block)){
+			if (index == 0) { //Se è il primo blocco devo creare le tre sequenze iniziali da cui poi far partire l'iterazione
+				for (let [ver, prop] of Object.entries(block)) {
 
-					if (block.hasOwnProperty(prop[0])) {
+					//Creo le prime tre sequenze
 
-						let sequence = {
-							blocks: 0,
-							score: 1,
-							current_page_height: 0,
-							current_lines: 0,
-							pages: [[]]
-						}
-	
-						let firstBlock = this.paragraph;
-	
-						firstBlock.block = index;
-						firstBlock.tag = prop[1].tagName;
-						firstBlock.ref = prop[1].ref;
-						console.log(prop.tagName);
-						firstBlock.lines = prop[1].lines.length;
-	
-						switch(prop[0]){
-							case "normal":
-								firstBlock.type = "normal";
-								break;
-							case "expand":
-								firstBlock.type = "expand";
-								break;
-							case "reduce":
-								firstBlock.type = "reduce";
-								break;
-						};
-	
-						firstBlock.complete = true;					
-	
-						A.push(sequence);
-						
-						//Aggiungo alla sequenza le informazioni sul blocco aggiunto
-						A[i].blocks = 1;
-						A[i].current_page_height = prop[1].height;
-						A[i].current_lines = prop[1].lines.length;
-						console.log(A[i]);
-						A[i].pages[0].push(firstBlock);
-	
-						i++;
-						console.log(firstBlock);
-						console.log("A",A);
-					}
+					let sequence = {
+						blocks: 0,
+						score: 1,
+						current_page_height: 0,
+						current_lines: 0,
+						lastBlock_type: "",
+						pages: [[]]
+					};
+
+					//Crea il blocco prendendo le informazioni da prop
+
+					let firstBlock = this.createBlock(index,ver,prop); 
+
+					sequence.blocks = 1;
+					sequence.current_page_height = prop.height;
+					sequence.current_lines = prop.lines.length;
+					sequence.lastBlock_type = ver;
+					sequence.pages[0].push(firstBlock);
+
+					//Aggiungo alla sequenza le informazioni sul blocco aggiunto
+					A.push(sequence);
 					
+					console.log(A);
+								
 				}
-			}else{
-				i = 0;
-				for(const [ p , sequence] of A.entries()){
+			
+			} else {
+				
+				let solutionsLength = A.length;				
+				
+				for (let i = 0; i < solutionsLength ; i++) {					
 
-					let currentHeight = sequence.current_page_height;
-					let current_lines = sequence.current_lines;
+					for (let [ver, prop] of Object.entries(block)) {
+						
+						let currentHeight = A[0].current_page_height;
+						let current_lines = A[0].current_lines;
 
-					for(let prop of Object.entries(block)){
+						if (currentHeight + prop.height < pageHeight) {
 
-						if(currentHeight + prop[1].height < pageHeight){
-							
-							let paragraph = {
-								block: 0,
-								tag: "",
-								ref: "",
-								lines: 0,
-								type: "",
-								complete: true
-							}
-		
-							paragraph.block = index;
-							paragraph.tag = prop[1].tagName;
-							paragraph.ref = prop[1].ref;
-							paragraph.lines = prop[1].lines.length;
-							
-							switch(i){
-								case 0:
-									paragraph.type = "normal";
-									break;
-								case 1:
-									paragraph.type = "expand";
-									break;
-								case 2:
-									paragraph.type = "reduce";
-									break;
+							let paragraph = this.createBlock(index,ver,prop);
+
+							const newSequence = {
+								blocks: 0,
+								score: 1,
+								current_page_height: 0,
+								current_lines: 0,
+								lastBlock_type: "",
+								pages: []
 							};
-		
-							paragraph.complete = true;
-							
-							temp.push(sequence);
-							console.log(temp[temp.length - 1].pages[temp[temp.length-1].pages.lenght - 1]);
-							temp[temp.length - 1].pages[temp[temp.length-1].pages.lenght - 1].push(paragraph);
 
-							//A.push(prop);
-							temp[temp.length - 1].current_page_height = currentHeight + prop.height;
-							temp[temp.length - 1].current_lines = current_lines + paragraph.lines;
-							
-						}else{	
+							console.log(paragraph);
+
+							newSequence.blocks =  A[0].blocks + 1;
+							newSequence.current_page_height = currentHeight + prop.height;
+							newSequence.current_lines = current_lines + paragraph.lines;
+							newSequence.lastBlock_type = ver;
+							console.log(A[0].pages);
+							//Devo ricostruire le pagine
+
+							A[0].pages.forEach(page => newSequence.pages.push(page));
+							console.log(newSequence.pages);
+
+							newSequence.pages[newSequence.pages.length - 1].push(paragraph);
+
+
+							A.push(newSequence);
+							console.log("newSequence",newSequence);
+
+							console.log("A with new sequence", A);
+
+						} else {
 							let overflow = currentHeight - pageHeight;
-							let	score = this.calcScore(currentHeight,pageHeight,prop[1].lines);
-							
-							if(score.score <= 0){
-								console.log("non l'aggiungo nemmeno a temp")
-							}else{
+							let score = this.calcScore(currentHeight, pageHeight, prop.lines);
 
-								//Creo il paragrafo before
+							if(score.score > 0){
+								
+								complete = false;
+								
+								let newBreakSequence = sequence;
 
-								let beforeBreakPar = this.paragraph;
-								let afterBreakPar = this.paragraph;
+								let beforeBreakPar = this.createBlock(index,ver,prop,complete);
+								let afterBreakPar = this.createBlock(index,ver,prop,complete);
 
-								let newPage = [];
-		
-								beforeBreakPar.block = index;
-								beforeBreakPar.tag = prop[1].tagName;
-								beforeBreakPar.ref = prop[1].ref;
+								let newPage = [[]];
+
 								beforeBreakPar.lines = score.linesBefore;
-							
-								switch(i){
-									case 0:
-										beforeBreakPar.type = "normal";
-										break;
-									case 1:
-										beforeBreakPar.type = "expand";
-										break;
-									case 2:
-										beforeBreakPar.type = "reduce";
-										break;
-								};
-			
-								beforeBreakPar.complete = false;
+								
+								//Aggiungo il blocco beforeBreak
+								newBreakSequence.pages[newBreakSequence.pages.length - 1].push(beforeBreakPar);
 
-								temp.push(sequence);
-								temp[temp.length - 1].pages[temp.pages.lenght - 1][temp.pages[temp.pages.length -1].length - 1].push(beforeBreakPar);
-
-								//Creo il paragrafo After
-
-								afterBreakPar.block = index;
-								afterBreakPar.tag = prop.tagName;
-								afterBreakPar.ref = prop.ref;
 								afterBreakPar.lines = score.linesAfter;
-							
-								switch(i){
-									case 0:
-										afterBreakPar.type = "normal";
-										break;
-									case 1:
-										afterBreakPar.type = "expand";
-										break;
-									case 2:
-										afterBreakPar.type = "reduce";
-										break;
-								};
-			
 								afterBreakPar.complete = true;
-
-								temp[temp.length - 1].pages.push(newPage);
-								temp[temp.length - 1].pages[temp.pages.lenght - 1][temp.pages[temp.pages.length -1].length - 1].push(afterBreakPar);
-
+								
+								//Aggiungo la nuova pagina con il blocco afterBreak
+								newPage[0].push(afterBreakPar);
+								newBreakSequence.pages.push(newPage);
 
 								//Aggiorno le informazioni della sequenza
+								newBreakSequence.score = score.score;
+								newBreakSequence.current_page_height = overflow;
+								newBreakSequence.current_lines = afterBreakPar.lines;
+								newBreakSequence.lastBlock_type = ver;
 
-								temp[temp.length - 1].score = score.score;
-								temp[temp.length - 1].current_page_height = overflow;
-								temp[temp.length - 1].current_lines = afterBreakPar.lines;
+								A.push(newBreakSequence);
+								console.log(beforeBreakPar,afterBreakPar);
 							}
-									
-									
-								}	
-							}
-					
-					//A.shift();
+
+
+						}
+					}
+
+					A.shift();
 				}
 
-				for(let u = 0; u < temp.length; u++ ){
+				for (let u = 0; u < A.length; u++) {
 
-					let lastScore = temp[u].score;
-					let lastType = temp[u].pages[temp.pages.length-1][temp.pages[temp.pages.length - 1]].type;
-					let lastCurrentPageHeight = temp[u].current_page_height; 
+					let lastScore = A[u].score;
+					let lastCurrentPageHeight = A[u].current_page_height;
 
-					for(let j = u + 1; j < temp.length; j++){
+					for (let j = u + 1; j < A.length; j++) {
+						if (lastCurrentPageHeight != A[j].current_page_height) {
+							console.log("sono diversi e li tengo entrambi");
+						} else {
+							let lastScoreNext = A[j].score;
 
-					if(lastCurrentPageHeight != temp[j].current_page_height){
-						console.log("sono diversi e li tengo entrambi")
-					}else{
-						let lastScoreNext = temp[j].score;
+							if (lastScore > lastScoreNext) {
+								A.splice(j, 1); //Elimino l'elemento di J con lo score più basso
+							} else {
+								if (lastScore == lastScoreNext) {
 
-						if(lastScore > lastScoreNext){
-							temp.splice(j,1); //Elimino l'elemento di J con lo score più basso
-						}else{
-							if(lastScore == lastScoreNext){
+									let lastType = A[u].lastBlock_type;
+									let lastTypeNext = A[j].lastBlock_type;
 
-								let lastTypeNext = temp[j].pages[temp.pages.length-1][temp.pages[temp.pages.length - 1]].type;
-								
-								if(lastTypeNext != "normal"){
-									temp.splice(j,1);
-								}else{
-									temp.splice(u,1);
+									if (lastTypeNext != "normal" || lastType != "normal") {
+										
+										if(lastType == "normal"){
+											A.splice(j,1);
+										}else{
+											A.splice(u,1);
+										}		
+									} else {
+
+										let int = this.getRandomInt(2);
+
+										if(int == 0){
+											A.splice(u,1);
+										}else{
+											A.splice(j,1);
+										}
+									}
+								} else {
+									A.splice(u, 1); //Altrimenti elimino U
 								}
-							}else{
-								temp.splice(u,1); //Altrimenti elimino U
 							}
 						}
 					}
+
 				}
-
-				if(temp[u] != undefined){
-					A.push(temp[u]);
-				}
-
-			}
-
-			while(temp.length > 0) { //Svuoto temp
-				temp.pop();
-			}
-			
 
 			}
 
@@ -594,17 +540,42 @@ class Layout {
 	}
 
 
-			
-					
+	getRandomInt(max) {
+		return Math.floor(Math.random() * Math.floor(max));
+	  }
 
-					
+	createBlock(index,ver,prop,complete = true){
 
-		
+		let paragraph = {
+			block: 0,
+			tag: "",
+			ref: "",
+			lines: 0,
+			type: "",
+			complete: true
+		};
 
-	
+		paragraph.block = index;
+		paragraph.tag = prop.tagName;
+		paragraph.ref = prop.ref;
+		paragraph.type = ver;
+
+		if(!complete){
+			paragraph.complete = false;
+		}else{
+			paragraph.lines = prop.lines.length;
+		}
+
+		return paragraph;
+	}
 
 
-	breakAt(node, offset=0) {
+
+
+
+
+
+	breakAt(node, offset = 0) {
 		return {
 			node,
 			offset
@@ -638,20 +609,20 @@ class Layout {
 		return start;
 	}
 
-	appendModified(node,dest,shallow=true){
-		
+	appendModified(node, dest, shallow = true) {
+
 		let clone = cloneNode(node, !shallow); //clona sempre il nodo, sostanzialmente
-		if(node.parentNode && isElement(node.parentNode)){
-			let parent = findElement(node.parentNode,dest);
-		if(parent){
-			parent.appendChild(clone);
-		}else{
-			if(!parent){
-				dest.appendChild(clone)
+		if (node.parentNode && isElement(node.parentNode)) {
+			let parent = findElement(node.parentNode, dest);
+			if (parent) {
+				parent.appendChild(clone);
+			} else {
+				if (!parent) {
+					dest.appendChild(clone);
 				}
 			}
 		}
-		else{
+		else {
 			dest.appendChild(clone);
 		}
 
@@ -659,19 +630,19 @@ class Layout {
 	}
 	//Clona il nodo della pagina.
 
-	append(node, dest, breakToken, shallow=true, rebuild=true) {
+	append(node, dest, breakToken, shallow = true, rebuild = true) {
 
 		let clone = cloneNode(node, !shallow); //clona sempre il nodo, sostanzialmente
 		if (node.parentNode && isElement(node.parentNode)) {
 			let parent = findElement(node.parentNode, dest); //dest è sostanzialmente la destinazione ovvero dove deve essere attaccato
-			console.log("Parent in append",parent, dest); //Non trova il parent all'interno della pagina per il breaktoken. Quindi, va reinserito
+			console.log("Parent in append", parent, dest); //Non trova il parent all'interno della pagina per il breaktoken. Quindi, va reinserito
 			// Rebuild chain
 			if (parent) {
 				parent.appendChild(clone);
 				console.log("appendChild", clone);
 			} else if (rebuild) { //Rebuild ancestor serve per ricostruire e reinerire il breaktoken
 				let fragment = rebuildAncestors(node);
-				console.log("rebuildAncestors fragment",fragment);
+				console.log("rebuildAncestors fragment", fragment);
 				parent = findElement(node.parentNode, fragment); //Gli ho aggiunto i p e section
 				console.log(parent);
 				if (!parent) {
@@ -713,11 +684,11 @@ class Layout {
 	async awaitImageLoaded(image) {
 		return new Promise(resolve => {
 			if (image.complete !== true) {
-				image.onload = function() {
+				image.onload = function () {
 					let { width, height } = window.getComputedStyle(image);
 					resolve(width, height);
 				};
-				image.onerror = function(e) {
+				image.onerror = function (e) {
 					let { width, height } = window.getComputedStyle(image);
 					resolve(width, height, e);
 				};
@@ -742,7 +713,7 @@ class Layout {
 				break;
 			}
 
-			if(window.getComputedStyle(node)["break-inside"] === "avoid") {
+			if (window.getComputedStyle(node)["break-inside"] === "avoid") {
 				breakNode = node;
 				break;
 			}
@@ -755,7 +726,7 @@ class Layout {
 		let container = overflow.startContainer; //il nodo di partenza
 		console.log("Container Overflow ", container);
 		let offset = overflow.startOffset; //L'offset di pagina dell'overflow
-		console.log("startOffeset",offset);
+		console.log("startOffeset", offset);
 		let node, renderedNode, parent, index, temp;
 
 		if (isElement(container)) {
@@ -800,7 +771,7 @@ class Layout {
 
 			node = child(parent, index); //ritorna il figlio
 
-			console.log("node.textContent.indexOf",node.textContent.indexOf(container.textContent));
+			console.log("node.textContent.indexOf", node.textContent.indexOf(container.textContent));
 
 			offset += node.textContent.indexOf(container.textContent); //All'offset aggiunge la posizione del figlio.
 		}
@@ -818,9 +789,9 @@ class Layout {
 
 	//Cerca il BreakToken in base all'overflow
 
-	findBreakToken(rendered, source, bounds=this.bounds, extract=true) {
-		console.log("FIND BREAKTOKEN rendered",rendered);
-		
+	findBreakToken(rendered, source, bounds = this.bounds, extract = true) {
+		console.log("FIND BREAKTOKEN rendered", rendered);
+
 		let overflow = this.findOverflow(rendered, bounds); //Ritorna il range di pagina
 		let breakToken;
 
@@ -849,22 +820,22 @@ class Layout {
 		}
 		return breakToken;
 	}
-	hasOverflow(element, bounds=this.bounds) {
+	hasOverflow(element, bounds = this.bounds) {
 		let constrainingElement = element && element.parentNode; // this gets the element, instead of the wrapper for the width workaround
 		let { width } = element.getBoundingClientRect();
 		let scrollWidth = constrainingElement ? constrainingElement.scrollWidth : 0; //The Element.scrollWidth read-only property is a measurement of the width of an element's content, including content not visible on the screen due to overflow.
 		return Math.max(Math.floor(width), scrollWidth) > Math.round(bounds.width);
 	}
 
-	findOverflow(rendered, bounds=this.bounds) {
+	findOverflow(rendered, bounds = this.bounds) {
 		if (!this.hasOverflow(rendered, bounds)) return; //Se non fa Overflow entra. 
-		
+
 		let start = Math.round(bounds.left); //inizio e fine del range del tag in overflow
-		let end =  Math.round(bounds.right);
+		let end = Math.round(bounds.right);
 		let range;
 		let score = 0;
 		let maxHeight = 0;
-		console.log("rendered.firstChild in FindOverflow",rendered.firstChild);
+		console.log("rendered.firstChild in FindOverflow", rendered.firstChild);
 		let walker = walk(rendered.firstChild, rendered); //rendered è il wrapper in questo caso, quindi prende tutto la section interna
 
 		// Find Start . Inizia a scorrere dentro il wrapper
@@ -880,20 +851,20 @@ class Layout {
 
 			if (node) {
 				let pos = getBoundingClientRect(node); //Grandezza del Nodo intero
-				console.log("bounds",this.bounds);
+				console.log("bounds", this.bounds);
 				maxHeight += pos.height;
-				console.log("getBoundingClientRects",pos);		
+				console.log("getBoundingClientRects", pos);
 				let rects = getClientRects(node); //La length sono le righe
-				console.log("Rects",rects);
+				console.log("Rects", rects);
 				let left = Math.floor(pos.left);
 				let right = Math.floor(pos.right);
-				console.log("range" ,range);
+				console.log("range", range);
 
 				if (!range && left >= end) { //Entra qui solo se tutto il blocco è più grande.
 					// Check if it is a float
 					let isFloat = false;
 
-					if (isElement(node) ) {
+					if (isElement(node)) {
 						let styles = window.getComputedStyle(node); //Prende il CSS del nodo
 						isFloat = styles.getPropertyValue("float") !== "none";
 						skip = styles.getPropertyValue("break-inside") === "avoid";
@@ -923,19 +894,19 @@ class Layout {
 				}
 
 				if (!range && isText(node) &&
-						node.textContent.trim().length &&
-						window.getComputedStyle(node.parentNode)["break-inside"] !== "avoid") {
-					console.log("getBoundingClientRects Break",pos);		
+					node.textContent.trim().length &&
+					window.getComputedStyle(node.parentNode)["break-inside"] !== "avoid") {
+					console.log("getBoundingClientRects Break", pos);
 					rects = getClientRects(node); //La length sono le righe
-					console.log("Rects Break",rects);
+					console.log("Rects Break", rects);
 					let rect;
 					left = 0;
 					for (var i = 0; i != rects.length; i++) { //ogni riga.
 						rect = rects[i];
-						
+
 						if (rect.width > 0 && (!left || rect.left > left)) { //width è quanto spazio ha in riga.
 							left = rect.left; //left è la posizione di sinistra della riga  
-							console.log("left",left); //Quando si sposta, vuol dire che si è cambiato pagina.
+							console.log("left", left); //Quando si sposta, vuol dire che si è cambiato pagina.
 						} //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
 
 					}
@@ -943,8 +914,8 @@ class Layout {
 					//A questo punto posso inserire qui l'algoritmo per calcolare lo score.
 
 					//Quando fa overflow entra qui
-					if(left >= end) {
-						console.log("In Overflow",node);
+					if (left >= end) {
+						console.log("In Overflow", node);
 						range = document.createRange();
 						//offset = this.textBreak(node, start, end); //Ritorna lo startoffset della prima parola che fa overflow
 						this.textBreak(node, start, end); //trova dov'è effettivamente il break
@@ -964,7 +935,7 @@ class Layout {
 						} else {
 							//Setta l'inizio del range dall nodo segnato che è quello di fine pagina e l'offset trovato fin dove arriva il testo
 							range.setStart(node, offset);
-							console.log("Node,offset in else range ",node,offset);
+							console.log("Node,offset in else range ", node, offset);
 						}
 						break;
 					}
@@ -984,17 +955,17 @@ class Layout {
 
 		// Find End
 		if (range) { //Ritorna fin dove arriva la fine della pagina
-			console.log("rendered.lastchild",rendered, rendered.lastChild);
+			console.log("rendered.lastchild", rendered, rendered.lastChild);
 			range.setEndAfter(rendered.lastChild); //A questo punto prende come End del range il lastChild del div di pagina.
-			console.log("range",range);
-			console.log("maxHeight",maxHeight);
+			console.log("range", range);
+			console.log("maxHeight", maxHeight);
 			return range; //Ritorna il range di pagina.
 		}
 
 	}
 
 
-	findEndToken(rendered, source, bounds=this.bounds) {
+	findEndToken(rendered, source, bounds = this.bounds) {
 		if (rendered.childNodes.length === 0) {
 			return;
 		}
@@ -1006,7 +977,7 @@ class Layout {
 			if (!validNode(lastChild)) {
 				// Only get elements with refs
 				lastChild = lastChild.previousSibling;
-			} else if(!validNode(lastChild.lastChild)) {
+			} else if (!validNode(lastChild.lastChild)) {
 				// Deal with invalid dom items
 				lastChild = prevValidNode(lastChild.lastChild);
 				break;
@@ -1060,37 +1031,37 @@ class Layout {
 				this.paragraph.lineAfterBreak = lineAfterBreak;
 				this.paragraph.offset = offset;
 				this.paragraph.lineBeforeBreak = lineBeforeBreak;
-				done = true;				
-				console.log("paragraph",this.paragraph);
+				done = true;
+				console.log("paragraph", this.paragraph);
 				break;
 			}
 
 			pos = getBoundingClientRect(word);
 			left = Math.floor(pos.left);
 			right = Math.floor(pos.right);
-			
-			if(top == 0){
+
+			if (top == 0) {
 				lastTop = Math.floor(pos.top);
 			}
-			else{
+			else {
 				currentTop = Math.floor(pos.top);
-				if(lastTop != currentTop){
+				if (lastTop != currentTop) {
 					lastTop = currentTop;
 					lineNum = lineNum + 1;
 
-					if(offset == undefined){
-						lineBeforeBreak = lineNum - 1;						
-						}
-					} 
+					if (offset == undefined) {
+						lineBeforeBreak = lineNum - 1;
+					}
 				}
-			
+			}
+
 			line_height = Math.floor(pos.bottom) - Math.floor(pos.top); //Altezza di riga
 
-			
-			 
-			
+
+
+
 			//Finché left non supera end, quindi c'è ancora spazio per inserire, l'offset si sposta. 
-			
+
 			if (left >= end && offset == undefined) {
 				this.paragraph.offset = word.startOffset;
 			}
@@ -1124,40 +1095,41 @@ class Layout {
 
 	}
 
-	calcScore(currentHeight,pageHeight,lines){
+	calcScore(currentHeight, pageHeight, lines) {
 
 		let score;
-		let overflow = currentHeight - pageHeight;
+		//let overflow = currentHeight - pageHeight;
 		let linesBefore = 0;
 		let linesAfter;
 		let lineNum = lines.length;
 
-		if(lines.length == 1){
+		if (lines.length == 1) {
 			score = 1;
 			linesAfter = 1;
 			linesBefore = 0;
 			return {
 				score,
 				linesAfter,
-				linesBefore};
-		}else {
-			if(lines.length <= 3){
-				 score = 0;
-				 return score;
-			}else{
-				for(const line of lines){ //Anche un ciclo while. 
-					if(currentHeight >= pageHeight){
-						linesAfter = lineNum - linesBefore;	
-						break
+				linesBefore
+			};
+		} else {
+			if (lines.length <= 3) {
+				score = 0;
+				return score;
+			} else {
+				for (const line of lines) { //Anche un ciclo while. 
+					if (currentHeight >= pageHeight) {
+						linesAfter = lineNum - linesBefore;
+						break;
 					}
 					currentHeight = currentHeight + line.height;
 					linesBefore = linesBefore + 1;
 				}
-					
-				switch(lineNum - linesAfter){
+
+				switch (lineNum - linesAfter) {
 					case 0:
 						score = 0.2;
-						break
+						break;
 					case 1:
 						score = 0.0;
 						break;
@@ -1175,8 +1147,8 @@ class Layout {
 						break;
 					/*case lineNum + 1:
 						score = 1;*/
-					default :
-						score = 0.8;						
+					default:
+						score = 0.8;
 				}
 			}
 		}
@@ -1186,13 +1158,13 @@ class Layout {
 			linesAfter,
 			linesBefore
 		};
-	
+
 	}
-		
-	
+
+
 
 	removeOverflow(overflow) {
-		let {startContainer} = overflow;
+		let { startContainer } = overflow;
 		let extracted = overflow.extractContents();
 
 		this.hyphenateAtBreak(startContainer);
@@ -1203,7 +1175,7 @@ class Layout {
 	hyphenateAtBreak(startContainer) {
 		if (isText(startContainer)) {
 			let startText = startContainer.textContent;
-			let prevLetter = startText[startText.length-1];
+			let prevLetter = startText[startText.length - 1];
 
 			// Add a hyphen if previous character is a letter or soft hyphen
 			if (/^\w|\u00AD$/.test(prevLetter)) {

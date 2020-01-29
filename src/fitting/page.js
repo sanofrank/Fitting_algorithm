@@ -128,9 +128,9 @@ class Page {
 
 		let blocks = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken);
 
-		let sequences = await this.layoutMethod.getSequence(blocks,this.wrapper,contents);
+		let sequences = await this.layoutMethod.getArraySequence(blocks);
 
-		console.log("A",sequences);
+		console.log("A in page",sequences);
 
 		this.addListeners(contents);
 
