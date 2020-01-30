@@ -283,11 +283,11 @@ class Layout {
 					exBlock.left = renderedBounding.left;
 					exBlock.right = renderedBounding.right;
 
-					for (var i = 0; i != lines.length; i++) { //ogni riga.
+					for (let i = 0; i != lines.length; i++) { //ogni riga.
 						line = lines[i];
 						exBlock.lines.push(line);
 
-					};
+					}
 
 					blocks[iterator].expand = exBlock;
 
@@ -295,7 +295,7 @@ class Layout {
 
 					//Reduce
 
-					rendered.style.wordSpacing = (currentSize - 0.05) + 'px';
+					rendered.style.wordSpacing = (currentSize - 1) + 'px';
 
 					renderedBounding = rendered.getBoundingClientRect();
 					lines = getClientRects(rendered.firstChild);
@@ -307,10 +307,10 @@ class Layout {
 					redBlock.left = renderedBounding.left;
 					redBlock.right = renderedBounding.right;
 
-					for (var i = 0; i != lines.length; i++) { //ogni riga.
+					for (let i = 0; i != lines.length; i++) { //ogni riga.
 						line = lines[i];
 						redBlock.lines.push(line);
-					};
+					}
 
 					blocks[iterator].reduced = redBlock;
 					rendered.remove();
@@ -318,7 +318,7 @@ class Layout {
 
 				iterator = iterator + 1;
 
-			};
+			}
 
 			//length += rendered.textContent.length; //Textlength in page, Prende solo la lunghezza del testo, se ha un container, giustamente non prende niente
 			console.log("length", length);
@@ -369,8 +369,9 @@ class Layout {
 			//creo l'array di sequenze e itero all'interno.
 			//all'inizio inserisco subito tutto dentro. 
 			if (index == 0) { //Se è il primo blocco devo creare le tre sequenze iniziali da cui poi far partire l'iterazione
+				let i = 0;
 				for (let [ver, prop] of Object.entries(block)) {
-
+					
 					//Creo le prime tre sequenze
 
 					let sequence = {
@@ -379,7 +380,7 @@ class Layout {
 						current_page_height: 0,
 						current_lines: 0,
 						lastBlock_type: "",
-						pages: [[]]
+						pages: []
 					};
 
 					//Crea il blocco prendendo le informazioni da prop
@@ -390,100 +391,99 @@ class Layout {
 					sequence.current_page_height = prop.height;
 					sequence.current_lines = prop.lines.length;
 					sequence.lastBlock_type = ver;
-					sequence.pages[0].push(firstBlock);
-
+				
 					//Aggiungo alla sequenza le informazioni sul blocco aggiunto
 					A.push(sequence);
+					let newPage = [];
+
+					A[i].pages.push(newPage);
+					A[i].pages[0].push(firstBlock);
 					
+					console.log("pagine",A[i].pages);
+
+					i++;
 					console.log(A);
 								
 				}
 			
 			} else {
-				
-				let solutionsLength = A.length;				
-				
-				for (let i = 0; i < solutionsLength ; i++) {					
 
+
+				let solutionsLength = A.length;
+				console.log("solutionLength",solutionsLength);				
+
+				for (let i = 0; i < solutionsLength ; i++) {					
 					for (let [ver, prop] of Object.entries(block)) {
 						
-						let currentHeight = A[0].current_page_height;
-						let current_lines = A[0].current_lines;
+						let clonedArray = A.slice(0,1);
+						let clonedObject = clonedArray[0];
+						let referenceSequence = JSON.parse(JSON.stringify(clonedObject)); //Faccio una copia della sequenza di riferimento
+
+						let currentHeight = referenceSequence.current_page_height;
+						let current_lines = referenceSequence.current_lines;
+						
+						console.log("referenceSequence",referenceSequence);
 
 						if (currentHeight + prop.height < pageHeight) {
 
 							let paragraph = this.createBlock(index,ver,prop);
 
-							const newSequence = {
-								blocks: 0,
-								score: 1,
-								current_page_height: 0,
-								current_lines: 0,
-								lastBlock_type: "",
-								pages: []
-							};
-
 							console.log(paragraph);
 
-							newSequence.blocks =  A[0].blocks + 1;
-							newSequence.current_page_height = currentHeight + prop.height;
-							newSequence.current_lines = current_lines + paragraph.lines;
-							newSequence.lastBlock_type = ver;
-							console.log(A[0].pages);
-							//Devo ricostruire le pagine
+							referenceSequence.blocks =  referenceSequence.blocks + 1;
+							referenceSequence.current_page_height = currentHeight + prop.height;
+							referenceSequence.current_lines = current_lines + paragraph.lines;
+							referenceSequence.lastBlock_type = ver;
+							referenceSequence.pages[referenceSequence.pages.length-1].push(paragraph);
 
-							A[0].pages.forEach(page => newSequence.pages.push(page));
-							console.log(newSequence.pages);
+							console.log("New Reference Sequence", referenceSequence);
 
-							newSequence.pages[newSequence.pages.length - 1].push(paragraph);
+							A.push(referenceSequence);
 
-
-							A.push(newSequence);
-							console.log("newSequence",newSequence);
-
-							console.log("A with new sequence", A);
+							console.log("A",A);
 
 						} else {
-							let overflow = currentHeight - pageHeight;
+							console.log("A before break",A);
+							let overflow = (currentHeight + prop.height) - pageHeight;
+							console.log(prop);
 							let score = this.calcScore(currentHeight, pageHeight, prop.lines);
 
+							console.log("score",score);
 							if(score.score > 0){
 								
 								complete = false;
 								
-								let newBreakSequence = sequence;
-
 								let beforeBreakPar = this.createBlock(index,ver,prop,complete);
 								let afterBreakPar = this.createBlock(index,ver,prop,complete);
 
-								let newPage = [[]];
+								let newPage = [];
 
 								beforeBreakPar.lines = score.linesBefore;
 								
 								//Aggiungo il blocco beforeBreak
-								newBreakSequence.pages[newBreakSequence.pages.length - 1].push(beforeBreakPar);
+								referenceSequence.pages[referenceSequence.pages.length - 1].push(beforeBreakPar);
 
 								afterBreakPar.lines = score.linesAfter;
 								afterBreakPar.complete = true;
 								
 								//Aggiungo la nuova pagina con il blocco afterBreak
-								newPage[0].push(afterBreakPar);
-								newBreakSequence.pages.push(newPage);
+								newPage.push(afterBreakPar);
+								referenceSequence.pages.push(newPage);
 
 								//Aggiorno le informazioni della sequenza
-								newBreakSequence.score = score.score;
-								newBreakSequence.current_page_height = overflow;
-								newBreakSequence.current_lines = afterBreakPar.lines;
-								newBreakSequence.lastBlock_type = ver;
+								referenceSequence.score = score.score;
+								referenceSequence.blocks += 1;
+								referenceSequence.current_page_height = overflow;
+								referenceSequence.current_lines = afterBreakPar.lines;
+								referenceSequence.lastBlock_type = ver;
 
-								A.push(newBreakSequence);
+								A.push(referenceSequence);
 								console.log(beforeBreakPar,afterBreakPar);
 							}
 
 
 						}
 					}
-
 					A.shift();
 				}
 
@@ -1013,7 +1013,7 @@ class Layout {
 		let left = 0;
 		let right = 0;
 		let top, currentTop, lastTop = 0;
-		let line_height = 0;
+		//let line_height = 0;
 		let lineNum = 0;
 		let lineAfterBreak = 0;
 		let lineBeforeBreak = 0;
@@ -1118,12 +1118,16 @@ class Layout {
 				return score;
 			} else {
 				for (const line of lines) { //Anche un ciclo while. 
+
+					currentHeight = currentHeight + line.height;
+
 					if (currentHeight >= pageHeight) {
 						linesAfter = lineNum - linesBefore;
 						break;
 					}
-					currentHeight = currentHeight + line.height;
+
 					linesBefore = linesBefore + 1;
+					console.log("line.height, currentHeight, pageHeight",line.height,currentHeight,pageHeight);
 				}
 
 				switch (lineNum - linesAfter) {
