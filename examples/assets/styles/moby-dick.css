@@ -108,14 +108,18 @@ margin: 0;
 text-align: justify;
 }
 
-header + p:first-line {
+/*header + p:first-line {
 text-transform: lowercase !important;
 font-variant: small-caps;
 font-size: 1.1em;
-}
+}*/
 
-p + p {
+/*p + p {
 text-indent: 1.33em;
+}*/
+
+p{
+  text-indent: 1.33em;
 }
 
 .decoration-rw {

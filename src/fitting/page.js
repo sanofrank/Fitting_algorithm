@@ -20,7 +20,7 @@ class Page {
 		// this.element = this.create(this.pageTemplate);
 	}
 
-	create(template) {
+	create(template, after) {
 		//let documentFragment = document.createRange().createContextualFragment( TEMPLATE );
 		//let page = documentFragment.children[0];
 		//pageTemplate.content è il template di pagina
@@ -28,12 +28,18 @@ class Page {
 		let page, index;
 		//Aggiunge il template di pagina
 		//after indica se lui è un elemento dopo un altro
-		this.pagesArea.appendChild(clone); //Node.appendChild() method adds a node to the end of the list of children of a specified parent node
-		page = this.pagesArea.lastChild;
-		
+		if (after) {
+			this.pagesArea.insertBefore(clone, after.nextElementSibling); //Node.insertBefore() method inserts a node before the reference node as a child of a specified parent node
+			index = Array.prototype.indexOf.call(this.pagesArea.children, after.nextElementSibling);
+			page = this.pagesArea.children[index];
+		} else {
+			this.pagesArea.appendChild(clone); //Node.appendChild() method adds a node to the end of the list of children of a specified parent node
+			page = this.pagesArea.lastChild;
+		}
 
 		let pagebox = page.querySelector(".pagedjs_pagebox"); 
 		let area = page.querySelector(".pagedjs_page_content");
+
 
 		let size = area.getBoundingClientRect();
 
@@ -66,7 +72,7 @@ class Page {
 		this.position = pgnum;
 
 		let page = this.element;
-		let pagebox = this.pagebox;
+		// let pagebox = this.pagebox;
 
 		let index = pgnum+1;
 
@@ -74,7 +80,7 @@ class Page {
 
 		this.id = id;
 
-		page.dataset.pageNumber = index;
+		// page.dataset.pageNumber = index;
 
 		page.dataset.pageNumber = index;
 		page.setAttribute('id', id);
@@ -116,7 +122,24 @@ class Page {
 	}
 	*/
 
-	async layout(contents, breakToken, maxChars) {
+	async layout(contents, breakToken, maxChars, fit) {
+		
+		this.clear();
+		console.log("layout in page", fit);
+		this.startToken = breakToken;
+
+		this.layoutMethod = new Layout(this.area, this.hooks, maxChars);
+
+		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken, fit);
+
+		this.addListeners(contents);
+
+		this.endToken = newBreakToken;
+
+		return newBreakToken;
+	}
+
+	async simpleFitting(contents,breakToken, maxChars){
 
 		this.clear();
 
@@ -124,19 +147,14 @@ class Page {
 		
 		this.layoutMethod = new Layout(this.area, this.hooks, maxChars);
 
-		//let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken);
+		let blocks = await this.layoutMethod.renderBlocks(this.wrapper, contents, breakToken);
 
-		let blocks = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken);
+		let sequence = await this.layoutMethod.getSequence(blocks);
 
-		let sequences = await this.layoutMethod.getArraySequence(blocks);
+		console.log("A in page",sequence);
 
-		console.log("A in page",sequences);
-
-		this.addListeners(contents);
-
-		this.endToken = newBreakToken;
-
-		return newBreakToken;
+		return sequence;
+	
 	}
 
 	async append(contents, breakToken) {

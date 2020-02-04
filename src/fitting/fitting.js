@@ -87,6 +87,19 @@ class Fitter {
 	constructor(content, renderTo) {
 		// this.preview = preview;
 
+
+		this.hooks = {};
+		this.hooks.beforeParsed = new Hook(this);
+		this.hooks.afterParsed = new Hook(this);
+		this.hooks.beforePageLayout = new Hook(this);
+		this.hooks.layout = new Hook(this);
+		this.hooks.renderNode = new Hook(this);
+		this.hooks.layoutNode = new Hook(this);
+		this.hooks.onOverflow = new Hook(this);
+		this.hooks.onBreakToken = new Hook();
+		this.hooks.afterPageLayout = new Hook(this);
+		this.hooks.afterRendered = new Hook(this);
+
 		this.pages = [];
 		this._total = 0;
 
@@ -100,10 +113,10 @@ class Fitter {
 		this.maxChars;
 
 		this.book = {
-			tot_blocks : 0,
+			tot_blocks: 0,
 			tot_score: 0,
 			current_page_height: 0,
-			pages:[]
+			pages: []
 		}
 
 		if (content) {
@@ -119,8 +132,8 @@ class Fitter {
 		} else {
 			document.querySelector("body").appendChild(this.pagesArea); //Altrimenti seleziona il body dal documento e lo aggiunge alla pagesArea
 		}
-		
-		
+
+
 		this.pageTemplate = document.createElement("template"); //Crea un tag template
 		this.pageTemplate.innerHTML = TEMPLATE; //Copia e incolla TEMPLATE in <template>
 	}
@@ -143,233 +156,269 @@ class Fitter {
 		});
 	}
 
-async flow(content, renderTo) {
-	let parsed;
+	async flow(content, renderTo) {
+		let parsed;
 
-	parsed = new ContentParser(content); //Fa il parsing del codice aggiungendo le REFS e togliendo gli spazzi vuoti
-	//Ancora non è stato chunkato
-	this.source = parsed; //Il testo HTML diventa la source
-	this.breakToken = undefined; 
+		parsed = new ContentParser(content); //Fa il parsing del codice aggiungendo le REFS e togliendo gli spazzi vuoti
+		//Ancora non è stato chunkato
+		this.source = parsed; //Il testo HTML diventa la source
+		this.breakToken = undefined;
 
-	if (this.pagesArea && this.pageTemplate) {
-		this.q.clear();
-		this.removePages();
-	} else {
-		this.setup(renderTo); //Setup del contenitore e della prima pagina
+		if (this.pagesArea && this.pageTemplate) {
+			this.q.clear();
+			this.removePages();
+		} else {
+			this.setup(renderTo); //Setup del contenitore e della prima pagina
+		}
+
+		await this.loadFonts();
+
+		let fit = await this.fitting(parsed, this.breakToken);
+
+		console.log("fit",fit);
+		//console.log(error);
+
+		let rendered = await this.render(parsed, this.breakToken, fit);
+
+		while (rendered.canceled) {
+			this.start();
+			rendered = await this.render(parsed, this.breakToken, fit);
+		}
+
+		this.rendered = true;
+
+		await this.hooks.afterRendered.trigger(this.pages, this);
+
+		this.emit("rendered", this.pages);
+		return this;
 	}
 
-	await this.loadFonts();
+	async render(parsed, startAt, fit) {
+		console.log("render", fit);
+		let renderer = this.layout(parsed, startAt, fit);
 
-	let rendered = await this.render(parsed, this.breakToken);
+		let done = false;
+		let result;
 
-	while (rendered.canceled) {
-		this.start();
-		rendered = await this.render(parsed, this.breakToken);
-	}
+		while (!done) {
+			console.log("rendering asincrono");
+			result = await this.q.enqueue(() => { return this.renderAsync(renderer); });
+			done = result.done;
+		}
 
-	this.rendered = true;
-
-	await this.hooks.afterRendered.trigger(this.pages, this);
-
-	this.emit("rendered", this.pages);
-	return this;
-}
-
-async render(parsed, startAt) {
-	let renderer = this.layout(parsed, startAt);
-
-	let done = false;
-	let result;
-
-	while (!done) {
-		console.log("rendering asincrono");
-		result = await this.q.enqueue(() => { return this.renderAsync(renderer); });
-		done = result.done;
-	}
-
-	return result;
-}
-
-async renderAsync(renderer) {
-	if (this.stopped) {
-		return { done: true, canceled: true };
-	}
-	let result = await renderer.next();
-	if (this.stopped) {
-		return { done: true, canceled: true };
-	} else {
 		return result;
 	}
-}
 
-
-
-async *layout(content, startAt) {
-
-	let breakToken = startAt || false;
-	// DEVO MODIFICARE QUI!!!!!	
-	console.log("LAYOUT BreakToken value = ",breakToken);
-
-	while (breakToken !== undefined && (MAX_PAGES ? this.total < MAX_PAGES : true)) { //QUI CREA LE PAGINE E LE RIEMPIE MANO A MANO
-		console.log("Fintanto che trova il breaktoken sta qui dentro")
-
-		if (breakToken && breakToken.node) {
-			await this.handleBreaks(breakToken.node); //Controlla se c'è un break presettato e aggiunge una pagina bianca.
-		} else {
-			//Prende il primo capitolo
-			await this.handleBreaks(content.firstChild); 
-			
+	async renderAsync(renderer) {
+		if (this.stopped) {
+			return { done: true, canceled: true };
 		}
+		let result = await renderer.next();
+		if (this.stopped) {
+			return { done: true, canceled: true };
+		} else {
+			return result;
+		}
+	}
+
+
+
+	async *layout(content, startAt, fit) {
+		console.log("layout",fit);
+		let breakToken = startAt || false;
+		// DEVO MODIFICARE QUI!!!!!	
+		console.log("LAYOUT BreakToken value = ", breakToken);
+
+		while (breakToken !== undefined && (MAX_PAGES ? this.total < MAX_PAGES : true)) { //QUI CREA LE PAGINE E LE RIEMPIE MANO A MANO
+			console.log("Fintanto che trova il breaktoken sta qui dentro");
+
+			if (breakToken && breakToken.node) {
+				await this.handleBreaks(breakToken.node); //Controlla se c'è un break presettato e aggiunge una pagina bianca.
+			} else {
+				//Prende il primo capitolo
+				await this.handleBreaks(content.firstChild);
+
+			}
+
+			let page = this.addPage(); //Ci torna ogni volta che una pagina è completa. 
+			console.log("Aggiunge una pagina in *layout", page);
+
+			// Layout content in the page, starting from the breakToken
+			console.log("MAX CHARS", this.maxChars);
+			breakToken = await page.layout(content, breakToken, this.maxChars,fit);
+			//await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
+
+			//this.emit("renderedPage", page);
+			//Si è fermato qui.
+			this.recoredCharLength(page.wrapper.textContent.length);
+			yield breakToken; //ritorna breakToken
+
+			// Stop if we get undefined, showing we have reached the end of the content
+		}
+	}
+
+	async fitting(content, startAt) {
+
+		let page = this.addPage();
+
+		let bestSequence = await page.simpleFitting(content, startAt, this.maxChars);
+
+		this.removePages(0);
+
+		return bestSequence; 
 		
-		let page = this.addPage(); //Ci torna ogni volta che una pagina è completa. 
-		console.log("Aggiunge una pagina in *layout",page);
-
-		// Layout content in the page, starting from the breakToken
-		console.log("MAX CHARS",this.maxChars);
-		breakToken = await page.layout(content, breakToken, this.maxChars);
-		//await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
-
-		//this.emit("renderedPage", page);
-		//Si è fermato qui.
-		this.recoredCharLength(page.wrapper.textContent.length);
-		yield breakToken; //ritorna breakToken
-
-		// Stop if we get undefined, showing we have reached the end of the content
-	}
-}
-
-recoredCharLength(length) {
-	if (length === 0) {
-		return;
-	}
-	this.charsPerBreak.push(length);
-
-	// Keep the length of the last few breaks
-	if (this.charsPerBreak.length > 4) {
-		this.charsPerBreak.shift();
 	}
 
-	this.maxChars = this.charsPerBreak.reduce((a, b) => a + b, 0) / (this.charsPerBreak.length);
-}
+	removePages(fromIndex=0) {
 
-//METODO MODIFICATO
-addPage(blank) {
-	let lastPage = this.pages[this.pages.length - 1];
-	// Create a new page from the template
-	let page = new Page(this.pagesArea, this.pageTemplate, blank, this.hooks);
+		if (fromIndex >= this.pages.length) {
+			return;
+		}
 
-	this.pages.push(page);
+		// Remove pages
+		for (let i = fromIndex; i < this.pages.length; i++) {
+			this.pages[i].destroy();
+		}
 
-	// Create the pages
-	page.create(undefined);
-	page.index(this.total);
-
-
-	//page.index(this.total);
-	if (!blank) {
-		// Listen for page overflow
-		page.onOverflow((overflowToken) => {
-			console.warn("overflow on", page.id, overflowToken);
-			// Only reflow while rendering
-			if (this.rendered) {
-				return;
-			}
-
-			let index = this.pages.indexOf(page) + 1;
-
-			// Stop the rendering
-			this.stop();
-
-			// Set the breakToken to resume at
-			this.breakToken = overflowToken;
-			console.log("DENTRO onOverflow",overflowToken);
-
-
-			// Remove pages
-			this.removePages(index);
-
-			if (this.rendered === true) {
-				this.rendered = false;
-
-				this.q.enqueue(async () => {
-
-					this.start();
-
-					await this.render(this.source, this.breakToken);
-
-					this.rendered = true;
-
-				});
-			}
-
-
-		});
-
-		page.onUnderflow((overflowToken) => {
-			// console.log("underflow on", page.id, overflowToken);
-
-			// page.append(this.source, overflowToken);
-
-		});
+		if (fromIndex > 0) {
+			this.pages.splice(fromIndex);
+		} else {
+			this.pages = [];
+		}
 	}
 
-	this.total = this.pages.length;
+	recoredCharLength(length) {
+		if (length === 0) {
+			return;
+		}
+		this.charsPerBreak.push(length);
 
-	return page;
-}
+		// Keep the length of the last few breaks
+		if (this.charsPerBreak.length > 4) {
+			this.charsPerBreak.shift();
+		}
 
-async handleBreaks(node) {
-	let currentPage = this.total + 1;
-	let currentPosition = currentPage % 2 === 0 ? "left" : "right";
-	// TODO: Recto and Verso should reverse for rtl languages
-	let currentSide = currentPage % 2 === 0 ? "verso" : "recto";	
-	let previousBreakAfter;
-	let breakBefore;
-	let page;
-
-	if (currentPage === 1) {
-		console.log("prima pagina", node);
-		return;
+		this.maxChars = this.charsPerBreak.reduce((a, b) => a + b, 0) / (this.charsPerBreak.length);
 	}
 
-	if (node &&
+	//METODO MODIFICATO
+	addPage(blank) {
+		let lastPage = this.pages[this.pages.length - 1];
+		// Create a new page from the template
+		let page = new Page(this.pagesArea, this.pageTemplate, blank, this.hooks);
+
+		this.pages.push(page);
+
+		// Create the pages
+		page.create(undefined, lastPage && lastPage.element);
+		page.index(this.total);
+
+
+		//page.index(this.total);
+		if (!blank) {
+			// Listen for page overflow
+			page.onOverflow((overflowToken) => {
+				console.warn("overflow on", page.id, overflowToken);
+				// Only reflow while rendering
+				if (this.rendered) {
+					return;
+				}
+
+				let index = this.pages.indexOf(page) + 1;
+
+				// Stop the rendering
+				this.stop();
+
+				// Set the breakToken to resume at
+				this.breakToken = overflowToken;
+				console.log("DENTRO onOverflow", overflowToken);
+
+
+				// Remove pages
+				this.removePages(index);
+
+				if (this.rendered === true) {
+					this.rendered = false;
+
+					this.q.enqueue(async () => {
+
+						this.start();
+
+						await this.render(this.source, this.breakToken);
+
+						this.rendered = true;
+
+					});
+				}
+
+
+			});
+
+			page.onUnderflow((overflowToken) => {
+				// console.log("underflow on", page.id, overflowToken);
+
+				// page.append(this.source, overflowToken);
+
+			});
+		}
+
+		this.total = this.pages.length;
+
+		return page;
+	}
+
+	async handleBreaks(node) {
+		let currentPage = this.total + 1;
+		let currentPosition = currentPage % 2 === 0 ? "left" : "right";
+		// TODO: Recto and Verso should reverse for rtl languages
+		let currentSide = currentPage % 2 === 0 ? "verso" : "recto";
+		let previousBreakAfter;
+		let breakBefore;
+		let page;
+
+		if (currentPage === 1) {
+			console.log("prima pagina", node);
+			return;
+		}
+
+		if (node &&
 			typeof node.dataset !== "undefined" &&
 			typeof node.dataset.previousBreakAfter !== "undefined") { //Credo che se già dovesse esistere un previousBreakAfter lo inizializza.
-		previousBreakAfter = node.dataset.previousBreakAfter;
-	}
+			previousBreakAfter = node.dataset.previousBreakAfter;
+		}
 
-	if (node &&
+		if (node &&
 			typeof node.dataset !== "undefined" &&
 			typeof node.dataset.breakBefore !== "undefined") { //Uguale con breakBefore
-		breakBefore = node.dataset.breakBefore;
-	}
-	//Qui decide se aggiungere una pagina bianca.
-	if( previousBreakAfter &&
+			breakBefore = node.dataset.breakBefore;
+		}
+		//Qui decide se aggiungere una pagina bianca.
+		if (previousBreakAfter &&
 			(previousBreakAfter === "left" || previousBreakAfter === "right") &&
 			previousBreakAfter !== currentPosition) {
-		page = this.addPage(true);
-	} else if( previousBreakAfter &&
+			page = this.addPage(true);
+		} else if (previousBreakAfter &&
 			(previousBreakAfter === "verso" || previousBreakAfter === "recto") &&
 			previousBreakAfter !== currentSide) {
-		page = this.addPage(true);
-	} else if( breakBefore &&
+			page = this.addPage(true);
+		} else if (breakBefore &&
 			(breakBefore === "left" || breakBefore === "right") &&
 			breakBefore !== currentPosition) {
-		page = this.addPage(true);
-	} else if( breakBefore &&
+			page = this.addPage(true);
+		} else if (breakBefore &&
 			(breakBefore === "verso" || breakBefore === "recto") &&
 			breakBefore !== currentSide) {
-		page = this.addPage(true);
-	}
+			page = this.addPage(true);
+		}
 
-	/*if (page) {
-		await this.hooks.beforePageLayout.trigger(page, undefined, undefined, this);
-		this.emit("page", page);
-		// await this.hooks.layout.trigger(page.element, page, undefined, this);
-		await this.hooks.afterPageLayout.trigger(page.element, page, undefined, this);
-		this.emit("renderedPage", page);
-	}*/
-}
+		/*if (page) {
+			await this.hooks.beforePageLayout.trigger(page, undefined, undefined, this);
+			this.emit("page", page);
+			// await this.hooks.layout.trigger(page.element, page, undefined, this);
+			await this.hooks.afterPageLayout.trigger(page.element, page, undefined, this);
+			this.emit("renderedPage", page);
+		}*/
+	}
 
 }
 
