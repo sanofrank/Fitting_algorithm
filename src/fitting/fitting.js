@@ -3,6 +3,8 @@ import ContentParser from "./parser";
 import EventEmitter from "event-emitter";
 import Hook from "../utils/hook";
 import Queue from "../utils/queue";
+import Chunker from "../chunker/chunker";
+
 import {
 	requestIdleCallback
 } from "../utils/utils";
@@ -104,6 +106,9 @@ class Fitter {
 		this._total = 0;
 
 		this.q = new Queue(this);
+
+		this.chunker = new Chunker();
+
 		this.stopped = false;
 		this.rendered = false;
 
@@ -117,11 +122,37 @@ class Fitter {
 			tot_score: 0,
 			current_page_height: 0,
 			pages: []
-		}
+		};
 
 		if (content) {
 			this.flow(content, renderTo);
 		}
+	}
+
+	renderOnIdle(renderer) {
+		return new Promise(resolve => {
+			requestIdleCallback(async () => {
+				if (this.stopped) {
+					return resolve({ done: true, canceled: true });
+				}
+				let result = await renderer.next();
+				if (this.stopped) {
+					resolve({ done: true, canceled: true });
+				} else {
+					resolve(result);
+				}
+			});
+		});
+	}
+
+	start() {
+		this.rendered = false;
+		this.stopped = false;
+	}
+
+	stop() {
+		this.stopped = true;
+		// this.q.clear();
 	}
 
 	setup(renderTo) {
@@ -158,7 +189,7 @@ class Fitter {
 
 	async flow(content, renderTo) {
 		let parsed;
-
+		await this.hooks.beforeParsed.trigger(content, this); //await: wait for a promise. 
 		parsed = new ContentParser(content); //Fa il parsing del codice aggiungendo le REFS e togliendo gli spazzi vuoti
 		//Ancora non è stato chunkato
 		this.source = parsed; //Il testo HTML diventa la source
@@ -171,13 +202,20 @@ class Fitter {
 			this.setup(renderTo); //Setup del contenitore e della prima pagina
 		}
 
+		this.emit("rendering", content);
+
+		await this.hooks.afterParsed.trigger(parsed, this);
+
 		await this.loadFonts();
 
 		let fit = await this.fitting(parsed, this.breakToken);
-
+		
 		console.log("fit",fit);
-		//console.log(error);
 
+		return fit;
+
+		
+		/*
 		let rendered = await this.render(parsed, this.breakToken, fit);
 
 		while (rendered.canceled) {
@@ -190,7 +228,8 @@ class Fitter {
 		await this.hooks.afterRendered.trigger(this.pages, this);
 
 		this.emit("rendered", this.pages);
-		return this;
+		return this;*/
+		
 	}
 
 	async render(parsed, startAt, fit) {
@@ -246,9 +285,9 @@ class Fitter {
 			// Layout content in the page, starting from the breakToken
 			console.log("MAX CHARS", this.maxChars);
 			breakToken = await page.layout(content, breakToken, this.maxChars,fit);
-			//await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
+			await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
 
-			//this.emit("renderedPage", page);
+			this.emit("renderedPage", page);
 			//Si è fermato qui.
 			this.recoredCharLength(page.wrapper.textContent.length);
 			yield breakToken; //ritorna breakToken
@@ -263,7 +302,12 @@ class Fitter {
 
 		let bestSequence = await page.simpleFitting(content, startAt, this.maxChars);
 
+		this.q.clear();
 		this.removePages(0);
+
+		let divPages = document.getElementsByClassName("pagedjs_pages");
+		divPages[0].remove();
+
 
 		return bestSequence; 
 		
@@ -311,9 +355,8 @@ class Fitter {
 
 		// Create the pages
 		page.create(undefined, lastPage && lastPage.element);
+
 		page.index(this.total);
-
-
 		//page.index(this.total);
 		if (!blank) {
 			// Listen for page overflow
@@ -411,13 +454,27 @@ class Fitter {
 			page = this.addPage(true);
 		}
 
-		/*if (page) {
+		if (page) {
 			await this.hooks.beforePageLayout.trigger(page, undefined, undefined, this);
 			this.emit("page", page);
 			// await this.hooks.layout.trigger(page.element, page, undefined, this);
 			await this.hooks.afterPageLayout.trigger(page.element, page, undefined, this);
 			this.emit("renderedPage", page);
-		}*/
+		}
+	}
+
+	get total() {
+		return this._total;
+	}
+	
+	set total(num) {
+		this.pagesArea.style.setProperty("--pagedjs-page-count", num);
+		this._total = num;
+	}
+
+	destroy() {
+		this.pagesArea.remove();
+		this.pageTemplate.remove();
 	}
 
 }
@@ -425,70 +482,8 @@ class Fitter {
 
 
 
-/*
 
-let style;
-let currentSize;
-let breakPoint;
-
-
-function microTweakDe(ps){
-        for(let item of ps){
-            style = window.getComputedStyle(item, null).getPropertyValue('font-size');
-            currentSize = parseFloat(style);
-            console.log(currentSize);
-            item.style.fontSize = (currentSize - 0.05) + 'px';
-        }
-
-    }
-
-function microTweakEn(ps){
-    for(let item of ps){
-        style = window.getComputedStyle(item, null).getPropertyValue('font-size');
-        currentSize = parseFloat(style);
-        console.log(currentSize);
-        item.style.fontSize = (currentSize + 0.05) + 'px';
-    }
-}
-
-
-class Prova extends Paged.Handler {
-    constructor(chunker, polisher, caller) {
-      super(chunker, polisher, caller);
-    }
-
-    afterPageLayout(pageFragment, page,breakToken) {      
-        let ps = pageFragment.getElementsByTagName("p");
-        for(let item of ps){
-            style = window.getComputedStyle(item, null).getPropertyValue('font-size');
-            currentSize = parseFloat(style);
-            console.log(currentSize);
-            item.style.fontSize = (currentSize - 0.05) + 'px';
-        }
-            console.log(page);
-            console.log(pageFragment);
-            console.log(breakToken);
-        
-        
-    }
-  }
-
-  class ProvaDue extends Paged.Handler {
-    constructor(chunker, polisher, caller) {
-      super(chunker, polisher, caller);
-    }
-
-    beforeParsed(content) {      
-        console.log(content);
-    }
-  
-  }
-
-  //Paged.registerHandlers(ProvaDue);
-
-*/
 
 EventEmitter(Fitter.prototype);
-
 
 export default Fitter;

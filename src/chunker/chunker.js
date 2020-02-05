@@ -3,6 +3,7 @@ import ContentParser from "./parser";
 import EventEmitter from "event-emitter";
 import Hook from "../utils/hook";
 import Queue from "../utils/queue";
+
 import {
 	requestIdleCallback
 } from "../utils/utils";
@@ -83,7 +84,7 @@ const TEMPLATE = `
  * @class
  */
 class Chunker {
-	constructor(content, renderTo) {
+	constructor(content, renderTo, sequence) {
 		// this.preview = preview;
 
 		this.hooks = {};
@@ -111,7 +112,7 @@ class Chunker {
 		this.maxChars;
 
 		if (content) {
-			this.flow(content, renderTo);
+			this.flow(content, renderTo, sequence);
 		}
 	}
 
@@ -129,7 +130,7 @@ class Chunker {
 		this.pageTemplate.innerHTML = TEMPLATE; //Copia e incolla TEMPLATE in <template>
 	}
 
-	async flow(content, renderTo) {
+	async flow(content, renderTo, sequence) {
 		let parsed;
 		await this.hooks.beforeParsed.trigger(content, this); //await: wait for a promise. 
 		parsed = new ContentParser(content);
@@ -150,11 +151,11 @@ class Chunker {
 
 		await this.loadFonts();
 
-		let rendered = await this.render(parsed, this.breakToken);
+		let rendered = await this.render(parsed, this.breakToken, sequence);
 
 		while (rendered.canceled) {
 			this.start();
-			rendered = await this.render(parsed, this.breakToken);
+			rendered = await this.render(parsed, this.breakToken, sequence);
 		}
 
 		this.rendered = true;
@@ -194,8 +195,8 @@ class Chunker {
 	// 	}
 	// }
 
-	async render(parsed, startAt) {
-		let renderer = this.layout(parsed, startAt);
+	async render(parsed, startAt, sequence) {
+		let renderer = this.layout(parsed, startAt, sequence);
 
 		let done = false;
 		let result;
@@ -299,7 +300,7 @@ class Chunker {
 		}
 	}
 	//Qui crea i breakToken
-	async *layout(content, startAt) {
+	async *layout(content, startAt, sequence) {
 		let breakToken = startAt || false;
 		// DEVO MODIFICARE QUI!!!!!	
 		console.log("FIRST ROUND", breakToken);
@@ -320,7 +321,7 @@ class Chunker {
 			this.emit("page", page);
 
 			// Layout content in the page, starting from the breakToken
-			breakToken = await page.layout(content, breakToken, this.maxChars);
+			breakToken = await page.layout(content, breakToken, this.maxChars, sequence);
 			await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
 			this.emit("renderedPage", page);
 			this.recoredCharLength(page.wrapper.textContent.length);

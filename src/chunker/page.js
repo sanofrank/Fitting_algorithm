@@ -14,6 +14,8 @@ class Page {
 		this.width = undefined;
 		this.height = undefined;
 
+		this.sequence;
+
 		this.hooks = hooks;
 
 		// this.element = this.create(this.pageTemplate);
@@ -121,15 +123,17 @@ class Page {
 	}
 	*/
 
-	async layout(contents, breakToken, maxChars) {
+	async layout(contents, breakToken, maxChars, sequence) {
 
 		this.clear();
+
+		this.sequence = sequence;
 
 		this.startToken = breakToken;
 
 		this.layoutMethod = new Layout(this.area, this.hooks, maxChars);
 
-		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken);
+		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken, this.sequence);
 
 		this.addListeners(contents);
 
@@ -144,7 +148,7 @@ class Page {
 			return this.layout(contents, breakToken);
 		}
 
-		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken);
+		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken, this.sequence);
 
 		this.endToken = newBreakToken;
 

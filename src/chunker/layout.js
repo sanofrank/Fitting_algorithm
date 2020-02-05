@@ -53,9 +53,11 @@ class Layout {
 		}
 
 		this.maxChars = maxChars || MAX_CHARS_PER_BREAK;
+		
+		this.sequence;
 	}
 
-	async renderTo(wrapper, source, breakToken, bounds=this.bounds) {
+	async renderTo(wrapper, source, breakToken, sequence, bounds=this.bounds) {
 		//Al primo giro, la source è il capitolo e il breakToken è false
 		let start = this.getStart(source, breakToken);
 		//Start è il capitolo all'inizio
@@ -65,6 +67,8 @@ class Layout {
 		let node;
 		let done;
 		let next;
+
+		this.sequence = sequence;
 
 		let hasRenderedContent = false;
 		let newBreakToken;
@@ -116,7 +120,54 @@ class Layout {
 			let shallow = isContainer(node); //boolean
 			console.log(node,wrapper,"Breaktoken", breakToken,shallow);
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
-			let rendered = this.append(node, wrapper, breakToken, shallow); //Qui sta la chiave
+			let rendered = this.append(node, wrapper, breakToken, shallow);
+
+			if (isText(rendered.firstChild)) {
+				let data_ref = rendered.getAttribute("data-ref");
+				console.log("rendered.data-ref", data_ref);
+				let exist = false;
+				let found;
+
+				for (let i = 0; i < sequence.pages.length; i++) {
+
+					let checkRef = (block) => block.ref === data_ref;
+
+					found = sequence.pages[i].findIndex(checkRef);
+
+					if (found != -1) {
+						console.log(found);
+						exist = true;
+						var pageNum = i;
+						break;
+					}
+				}
+
+
+				if (exist) {
+
+					let rects = getClientRects(rendered.firstChild);
+					let rect;
+					for (var i = 0; i != rects.length; i++) {
+						rect = rects[i];
+						console.log("rect heigt", rect);
+					}
+
+					if  (sequence.pages[pageNum][found].type === "expand") {
+						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
+						let currentSize = parseFloat(elementStyle);
+						rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
+					}
+
+					if  (sequence.pages[pageNum][found].type === "reduced") {
+						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
+						let currentSize = parseFloat(elementStyle);
+						rendered.style.wordSpacing = (currentSize - 1) + 'px';
+					}
+				}
+
+				console.log("exist", exist);
+			}
+
 			console.log("Rendered", rendered);
 			length += rendered.textContent.length;
 

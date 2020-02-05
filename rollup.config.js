@@ -27,9 +27,9 @@ export default [
 	{
 		input: pkg.module,
 		output: {
-				name: "PagedModule",
-				file: "./dist/paged.esm.js",
-				format: 'es'
+			name: "PagedModule",
+			file: "./dist/paged.esm.js",
+			format: 'es'
 		},
 		plugins: plugins
 	},

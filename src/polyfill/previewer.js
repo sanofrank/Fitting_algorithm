@@ -137,8 +137,9 @@ class Previewer {
 		let startTime = performance.now();
 		
 		
-		let flow = await this.fitter.flow(content,renderTo);
-		//let flow = await this.chunker.flow(content, renderTo);
+		let sequence = await this.fitter.flow(content,renderTo);
+
+		let flow = await this.chunker.flow(content, renderTo, sequence);
 
 		let endTime = performance.now();
 
