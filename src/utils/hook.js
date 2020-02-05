@@ -7,7 +7,7 @@
  * @example this.content = new Hook(this);
  */
 class Hook {
-	constructor(context){
+	constructor(context) {
 		this.context = context || this;
 		this.hooks = [];
 	}
@@ -17,13 +17,13 @@ class Hook {
 	 * @example this.content.register(function(){...});
 	 * @return {undefined} void
 	 */
-	register(){
-		for(var i = 0; i < arguments.length; ++i) {
-			if (typeof arguments[i]  === "function") {
+	register() {
+		for (var i = 0; i < arguments.length; ++i) {
+			if (typeof arguments[i] === "function") {
 				this.hooks.push(arguments[i]);
 			} else {
 				// unpack array
-				for(var j = 0; j < arguments[i].length; ++j) {
+				for (var j = 0; j < arguments[i].length; ++j) {
 					this.hooks.push(arguments[i][j]);
 				}
 			}
@@ -35,15 +35,15 @@ class Hook {
 	 * @example this.content.trigger(args).then(function(){...});
 	 * @return {Promise} results
 	 */
-	trigger(){
+	trigger() {
 		var args = arguments;
 		var context = this.context;
 		var promises = [];
 
-		this.hooks.forEach(function(task) {
+		this.hooks.forEach(function (task) {
 			var executing = task.apply(context, args);
 
-			if(executing && typeof executing["then"] === "function") {
+			if (executing && typeof executing["then"] === "function") {
 				// Task is a function that returns a promise
 				promises.push(executing);
 			}
@@ -57,32 +57,32 @@ class Hook {
 		return Promise.all(promises);
 	}
 
-  /**
-   * Triggers a hook to run all functions synchronously
-   * @example this.content.trigger(args).then(function(){...});
-   * @return {Array} results
-   */
-  triggerSync(){
-    var args = arguments;
-    var context = this.context;
-    var results = [];
+	/**
+	 * Triggers a hook to run all functions synchronously
+	 * @example this.content.trigger(args).then(function(){...});
+	 * @return {Array} results
+	 */
+	triggerSync() {
+		var args = arguments;
+		var context = this.context;
+		var results = [];
 
-    this.hooks.forEach(function(task) {
-      var executing = task.apply(context, args);
+		this.hooks.forEach(function (task) {
+			var executing = task.apply(context, args);
 
-      results.push(executing);
-    });
+			results.push(executing);
+		});
 
 
-    return results;
-  }
+		return results;
+	}
 
 	// Adds a function to be run before a hook completes
-	list(){
+	list() {
 		return this.hooks;
 	}
 
-	clear(){
+	clear() {
 		return this.hooks = [];
 	}
 }

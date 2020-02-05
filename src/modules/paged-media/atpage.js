@@ -5,8 +5,8 @@ import { rebuildAncestors } from "../../utils/dom";
 import { CSSValueToString } from "../../utils/utils";
 
 class AtPage extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 
 		this.pages = {};
 

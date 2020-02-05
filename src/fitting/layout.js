@@ -23,7 +23,6 @@ import {
 	prevValidNode,
 	words,
 	letters,
-	hasTextContent
 } from "../utils/dom";
 import EventEmitter from "event-emitter";
 import Hook from "../utils/hook";
@@ -168,7 +167,16 @@ class Layout {
 			console.log(node, wrapper, "Breaktoken", breakToken, shallow);
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
 			let rendered = this.appendModified(node, wrapper, shallow);
-			console.log("rendered.textContent", rendered);
+			console.log("rendered", rendered, rendered.getBoundingClientRect());
+
+			let data_break_before = rendered.getAttribute("data-break-before");
+			let data_break_after = rendered.getAttribute("data-break-after");
+
+			if(data_break_after || data_break_before){
+				if(rendered.tagName === "SECTION"){
+					
+				}
+			}
 
 			//Se è testo prendo le informazioni e rimuovo il blocco dalla pagina.
 			if (isText(rendered.firstChild)) {

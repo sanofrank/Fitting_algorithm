@@ -46,7 +46,6 @@ class ContentParser {
 	}
 
 	addRefs(content) {
-		//TreeWalker per percorrere il DOM
 		var treeWalker = document.createTreeWalker(
 			content,
 			NodeFilter.SHOW_ELEMENT,
@@ -79,7 +78,7 @@ class ContentParser {
 			NodeFilter.SHOW_TEXT,
 			{ acceptNode: function(node) {
 				// Only remove more than a single space
-				if (node.textContent.length > 1 && !node.textContent.trim()) { //TRIM function returns a text value with the leading and trailing spaces removed.
+				if (node.textContent.length > 1 && !node.textContent.trim()) {
 
 					// Don't touch whitespace if text is preformated
 					let parent = node.parentNode;

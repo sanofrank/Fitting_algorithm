@@ -3,8 +3,8 @@ import csstree from "css-tree";
 import { elementAfter } from "../../utils/dom";
 
 class Breaks extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 
 		this.breaks = {};
 	}
@@ -81,7 +81,6 @@ class Breaks extends Handler {
 			// Add break data
 			for (var i = 0; i < elements.length; i++) {
 				for (let prop of breaks[b]) {
-
 					if (prop.property === "break-after") {
 						let nodeAfter = elementAfter(elements[i], parsed);
 

@@ -6,9 +6,9 @@ import Handler from "./modules/handler";
 import { registerHandlers, initializeHandlers } from "./utils/handlers";
 
 export {
-	Fitter,
 	Chunker,
 	Polisher,
+	Fitter,
 	Previewer,
 	Handler,
 	registerHandlers,

@@ -3,12 +3,12 @@ import ContentParser from "./parser";
 import EventEmitter from "event-emitter";
 import Hook from "../utils/hook";
 import Queue from "../utils/queue";
-import Chunker from "../chunker/chunker";
+//import Chunker from "../chunker/chunker";
 
 import {
 	requestIdleCallback
 } from "../utils/utils";
-import { parse } from "css-tree";
+
 
 const MAX_PAGES = false;
 // Template di una pagina
@@ -107,8 +107,6 @@ class Fitter {
 
 		this.q = new Queue(this);
 
-		this.chunker = new Chunker();
-
 		this.stopped = false;
 		this.rendered = false;
 
@@ -190,16 +188,16 @@ class Fitter {
 	async flow(content, renderTo) {
 		let parsed;
 		await this.hooks.beforeParsed.trigger(content, this); //await: wait for a promise. 
-		parsed = new ContentParser(content); //Fa il parsing del codice aggiungendo le REFS e togliendo gli spazzi vuoti
+		parsed = new ContentParser(content);
 		//Ancora non è stato chunkato
 		this.source = parsed; //Il testo HTML diventa la source
-		this.breakToken = undefined;
+		this.breakToken = undefined; 
 
 		if (this.pagesArea && this.pageTemplate) {
 			this.q.clear();
 			this.removePages();
 		} else {
-			this.setup(renderTo); //Setup del contenitore e della prima pagina
+			this.setup(renderTo); //Setup di pagina
 		}
 
 		this.emit("rendering", content);
@@ -209,8 +207,9 @@ class Fitter {
 		await this.loadFonts();
 
 		let fit = await this.fitting(parsed, this.breakToken);
-		
 		console.log("fit",fit);
+
+		
 
 		return fit;
 

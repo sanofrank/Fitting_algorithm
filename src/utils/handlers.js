@@ -6,11 +6,11 @@ import pipe from "event-emitter/pipe";
 let registeredHandlers = [...pagedMediaHandlers, ...generatedContentHandlers];
 
 class Handlers {
-	constructor(chunker, polisher, caller) {
+	constructor(chunker, polisher, fitter, caller) {
 		let handlers = [];
 
 		registeredHandlers.forEach((Handler) => {
-			let handler = new Handler(chunker, polisher, caller);
+			let handler = new Handler(chunker, polisher, fitter, caller);
 			handlers.push(handler);
 			pipe(handler, this);
 		});
@@ -25,7 +25,7 @@ export function registerHandlers() {
 	}
 }
 
-export function initializeHandlers(chunker, polisher, caller) {
-	let handlers = new Handlers(chunker, polisher, caller);
+export function initializeHandlers(chunker, polisher, fitter, caller) {
+	let handlers = new Handlers(chunker, polisher, fitter, caller);
 	return handlers;
 }

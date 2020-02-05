@@ -1,6 +1,6 @@
 import EventEmitter from "event-emitter";
 
-import Fitting from "../fitting/fitting";
+import Fitter from "../fitting/fitting";
 import Chunker from "../chunker/chunker";
 import Polisher from "../polisher/polisher";
 
@@ -14,7 +14,7 @@ class Previewer {
 		this.polisher = new Polisher(false);
 
 		//Fitting Algorithm
-		this.fitter = new Fitting();
+		this.fitter = new Fitter();
 
 		// Chunk contents
 		this.chunker = new Chunker();
@@ -46,7 +46,7 @@ class Previewer {
 	}
 
 	initializeHandlers() {
-		let handlers = initializeHandlers(this.chunker, this.polisher, this);
+		let handlers = initializeHandlers(this.chunker, this.polisher, this.fitter, this);
 
 		handlers.on("size", (size) => {
 			this.size = size;

@@ -137,6 +137,8 @@ class Chunker {
 		//Ancora non è stato chunkato
 		this.source = parsed; //Il testo HTML diventa la source
 		this.breakToken = undefined; 
+		
+		
 
 		if (this.pagesArea && this.pageTemplate) {
 			this.q.clear();
@@ -144,6 +146,7 @@ class Chunker {
 		} else {
 			this.setup(renderTo); //Setup di pagina
 		}
+
 
 		this.emit("rendering", content);
 
