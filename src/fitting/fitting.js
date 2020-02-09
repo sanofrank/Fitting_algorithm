@@ -10,7 +10,7 @@ import {
 } from "../utils/utils";
 
 
-const MAX_PAGES = false;
+//const MAX_PAGES = false;
 // Template di una pagina
 const TEMPLATE = `
 <div class="pagedjs_page">
@@ -99,7 +99,7 @@ class Fitter {
 		this.hooks.layoutNode = new Hook(this);
 		this.hooks.onOverflow = new Hook(this);
 		this.hooks.onBreakToken = new Hook();
-		this.hooks.afterPageLayout = new Hook(this);
+		//this.hooks.afterPageLayout = new Hook(this);
 		this.hooks.afterRendered = new Hook(this);
 
 		this.pages = [];
@@ -231,70 +231,6 @@ class Fitter {
 		
 	}
 
-	async render(parsed, startAt, fit) {
-		console.log("render", fit);
-		let renderer = this.layout(parsed, startAt, fit);
-
-		let done = false;
-		let result;
-
-		while (!done) {
-			console.log("rendering asincrono");
-			result = await this.q.enqueue(() => { return this.renderAsync(renderer); });
-			done = result.done;
-		}
-
-		return result;
-	}
-
-	async renderAsync(renderer) {
-		if (this.stopped) {
-			return { done: true, canceled: true };
-		}
-		let result = await renderer.next();
-		if (this.stopped) {
-			return { done: true, canceled: true };
-		} else {
-			return result;
-		}
-	}
-
-
-
-	async *layout(content, startAt, fit) {
-		console.log("layout",fit);
-		let breakToken = startAt || false;
-		// DEVO MODIFICARE QUI!!!!!	
-		console.log("LAYOUT BreakToken value = ", breakToken);
-
-		while (breakToken !== undefined && (MAX_PAGES ? this.total < MAX_PAGES : true)) { //QUI CREA LE PAGINE E LE RIEMPIE MANO A MANO
-			console.log("Fintanto che trova il breaktoken sta qui dentro");
-
-			if (breakToken && breakToken.node) {
-				await this.handleBreaks(breakToken.node); //Controlla se c'è un break presettato e aggiunge una pagina bianca.
-			} else {
-				//Prende il primo capitolo
-				await this.handleBreaks(content.firstChild);
-
-			}
-
-			let page = this.addPage(); //Ci torna ogni volta che una pagina è completa. 
-			console.log("Aggiunge una pagina in *layout", page);
-
-			// Layout content in the page, starting from the breakToken
-			console.log("MAX CHARS", this.maxChars);
-			breakToken = await page.layout(content, breakToken, this.maxChars,fit);
-			await this.hooks.afterPageLayout.trigger(page.element, page, breakToken, this);
-
-			this.emit("renderedPage", page);
-			//Si è fermato qui.
-			this.recoredCharLength(page.wrapper.textContent.length);
-			yield breakToken; //ritorna breakToken
-
-			// Stop if we get undefined, showing we have reached the end of the content
-		}
-	}
-
 	async fitting(content, startAt) {
 
 		let page = this.addPage();
@@ -306,7 +242,6 @@ class Fitter {
 
 		let divPages = document.getElementsByClassName("pagedjs_pages");
 		divPages[0].remove();
-
 
 		return bestSequence; 
 		
@@ -454,11 +389,11 @@ class Fitter {
 		}
 
 		if (page) {
-			await this.hooks.beforePageLayout.trigger(page, undefined, undefined, this);
-			this.emit("page", page);
+			//await this.hooks.beforePageLayout.trigger(page, undefined, undefined, this);
+			//this.emit("page", page);
 			// await this.hooks.layout.trigger(page.element, page, undefined, this);
-			await this.hooks.afterPageLayout.trigger(page.element, page, undefined, this);
-			this.emit("renderedPage", page);
+			//await this.hooks.afterPageLayout.trigger(page.element, page, undefined, this);
+			//this.emit("renderedPage", page);
 		}
 	}
 

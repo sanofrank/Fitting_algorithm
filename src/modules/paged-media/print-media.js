@@ -2,8 +2,8 @@ import Handler from "../handler";
 import csstree from "css-tree";
 
 class PrintMedia extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 	}
 
 	onAtMedia(node, item, list) {

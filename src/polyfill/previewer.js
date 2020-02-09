@@ -43,6 +43,7 @@ class Previewer {
 		this.chunker.on("rendering", () => {
 			this.emit("rendering", this.chunker);
 		});
+	
 	}
 
 	initializeHandlers() {

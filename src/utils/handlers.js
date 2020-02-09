@@ -11,6 +11,7 @@ class Handlers {
 
 		registeredHandlers.forEach((Handler) => {
 			let handler = new Handler(chunker, polisher, fitter, caller);
+			
 			handlers.push(handler);
 			pipe(handler, this);
 		});

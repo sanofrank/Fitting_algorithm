@@ -155,13 +155,13 @@ class Layout {
 					if  (sequence.pages[pageNum][found].type === "expand") {
 						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
 						let currentSize = parseFloat(elementStyle);
-						rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
+						rendered.style.wordSpacing = (currentSize + 0.05) + 'em';
 					}
 
 					if  (sequence.pages[pageNum][found].type === "reduced") {
 						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
 						let currentSize = parseFloat(elementStyle);
-						rendered.style.wordSpacing = (currentSize - 1) + 'px';
+						rendered.style.wordSpacing = (currentSize - 0.05) + 'em';
 					}
 				}
 

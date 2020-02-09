@@ -308,7 +308,7 @@ class AtPage extends Handler {
 					parsed.size = this.getSize(declaration);
 					dList.remove(dItem);
 				} else if (prop === "bleed") {
-					parsed.bleed = []
+					parsed.bleed = [];
 
 					csstree.walk(declaration, {
 						enter: (subNode) => {

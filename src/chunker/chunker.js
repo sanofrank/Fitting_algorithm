@@ -138,8 +138,6 @@ class Chunker {
 		this.source = parsed; //Il testo HTML diventa la source
 		this.breakToken = undefined; 
 		
-		
-
 		if (this.pagesArea && this.pageTemplate) {
 			this.q.clear();
 			this.removePages();

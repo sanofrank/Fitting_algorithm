@@ -3,8 +3,8 @@ import { UUID, attr, querySelectorEscape } from "../../utils/utils";
 import csstree from "css-tree";
 
 class TargetText extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 
 		this.styleSheet = polisher.styleSheet;
 		this.textTargets = {};

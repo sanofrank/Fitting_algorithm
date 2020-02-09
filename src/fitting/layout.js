@@ -54,50 +54,10 @@ class Layout {
 
 		this.maxChars = maxChars || MAX_CHARS_PER_BREAK; //1500 DEFAULT
 
-
-
-
-		/*this.blockEx = {
-			width : 0,
-			height : 0,
-			left : 0,
-			right: 0,
-			lines: []
-		}
-
-		this.blockRed = {
-			width : 0,
-			height : 0,
-			left : 0,
-			right: 0,
-			lines: []
-		}*/
-
-		this.pages = {
-			blocks: 0,
-			score: 0,
-			current_page_height: 0,
-			pages: [],
-		};
-
-		this.paragraph = {
-			block: 0,
-			tag: "",
-			ref: "",
-			lines: 0,
-			type: "",
-			complete: true
-		};
+		this.data_break_after;
+		this.data_break_before;
 
 		this.fit; //Best Sequence
-
-		/*this.paragraph = {
-			lineNum: 0,
-			lineAfterBreak: 0,
-			lineBeforeBreak: 0,
-			offset: 0,
-			numBreak: 0,
-		};*/
 
 	}
 
@@ -117,24 +77,43 @@ class Layout {
 		let iterator = 0;
 
 		let hasRenderedContent = false;
-		let newBreakToken;
 
-		let length = 0;
+		let flyspeakArray = [];
+
+		//let newBreakToken;
+
+		//let length = 0;
 
 		while (!done) { //finchè non trova un nuovo breaktoken continua a girare
+
+			let block = {
+				tagName: "",
+				ref: "",
+				type: "",
+				break_after: "",
+				break_before: "",
+				width: 0,
+				height: 0,
+				left: 0,
+				right: 0,
+				lines: []
+			};
+	
+			let blockVer = [];
+
 			next = walker.next(); //Scorre gli elementi di source
 			node = next.value; //Prende il valore HTML
 			console.log("next.value", node);
 			done = next.done; //true una volta terminato (callback)
 
 			if (!node) {
-				this.hooks && this.hooks.layout.trigger(wrapper, this);
+				//this.hooks && this.hooks.layout.trigger(wrapper, this);
 				let imgs = wrapper.querySelectorAll("img");
 				if (imgs.length) { //Se è un' immagine, cerca la grandezza
 					await this.waitForImages(imgs);
 				}
 
-				newBreakToken = this.findBreakToken(wrapper, source, bounds);
+				//newBreakToken = this.findBreakToken(wrapper, source, bounds);
 
 				return blocks;
 			}
@@ -143,7 +122,7 @@ class Layout {
 
 			// Check if the rendered element has a break set
 			//Ad esempio i tag section
-			if (hasRenderedContent && this.shouldBreak(node)) {
+			/*if (hasRenderedContent && this.shouldBreak(node)) {
 
 				this.hooks && this.hooks.layout.trigger(wrapper, this);
 
@@ -157,66 +136,30 @@ class Layout {
 					newBreakToken = this.breakAt(node);
 				}
 
-				length = 0;
+				//length = 0;
 
 				break;
-			}
+			}*/
 
 			// Should the Node be a shallow or deep clone
 			let shallow = isContainer(node); //Valore boolean che si attiva nel caso sia un tipo DIV
 			console.log(node, wrapper, "Breaktoken", breakToken, shallow);
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
 			let rendered = this.appendModified(node, wrapper, shallow);
-			console.log("rendered", rendered, rendered.getBoundingClientRect());
+			console.log("rendered", rendered);
 
-			let data_break_before = rendered.getAttribute("data-break-before");
-			let data_break_after = rendered.getAttribute("data-break-after");
+			if(this.shouldBreak(node)){
+				if(node.tagName === "SECTION"){
 
-			if(data_break_after || data_break_before){
-				if(rendered.tagName === "SECTION"){
-					
+					this.data_break_after = node.getAttribute("data-break-after");
+					this.data_break_before = node.getAttribute("data-break-before");
+				
 				}
 			}
-
+			
 			//Se è testo prendo le informazioni e rimuovo il blocco dalla pagina.
-			if (isText(rendered.firstChild)) {
+			if (!shallow) {
 				console.log("isText", rendered.textContent);
-
-				let normBlock = {
-					tagName: "",
-					ref: "",
-					width: 0,
-					height: 0,
-					left: 0,
-					right: 0,
-					lines: []
-				};
-
-				let exBlock = {
-					tagName: "",
-					ref: "",
-					width: 0,
-					height: 0,
-					left: 0,
-					right: 0,
-					lines: []
-				};
-
-				let redBlock = {
-					tagName: "",
-					ref: "",
-					width: 0,
-					height: 0,
-					left: 0,
-					right: 0,
-					lines: []
-				};
-
-				let blockVer = {
-					normal: {},
-					expand: {},
-					reduced: {}
-				};
 
 				//Crea un blocco nuovo ogni iterazione
 
@@ -224,7 +167,12 @@ class Layout {
 				let renderedBounding = rendered.getBoundingClientRect();
 				console.log(isText(rendered.firstChild));
 				let lines = getClientRects(rendered.firstChild); //La length sono le righe
-				console.log("node", rendered);
+
+				let flyspeakLimit = (renderedBounding.width/100)*15; //get the 10% of the boundingClientRect of the block
+				console.log("flyspeakLimit", flyspeakLimit);
+
+
+				console.log("node shallow", rendered);
 				console.log("lines", lines);
 				let parent = rendered.parentNode.tagName;
 
@@ -235,37 +183,50 @@ class Layout {
 					chapterTitle = true;
 				}
 
-				normBlock.tagName = rendered.tagName;
-				console.log(normBlock.tagName);
-				console.log(bounds.left,bounds.right, bounds.right - bounds.left, bounds);
-				normBlock.ref = rendered.getAttribute("data-ref");
-				normBlock.width = renderedBounding.width;
-				normBlock.height = renderedBounding.height;
-				normBlock.left = renderedBounding.left;
-				normBlock.right = renderedBounding.right;
+				block.tagName = rendered.tagName;
+				block.ref = rendered.getAttribute("data-ref");
+				block.type = "normal";
+				block.width = renderedBounding.width;
+				block.height = renderedBounding.height;
+				block.left = renderedBounding.left;
+				block.right = renderedBounding.right;
+				
 
 				let line;
 
 				for (var i = 0; i != lines.length; i++) { //ogni riga.
 					line = lines[i];
 					console.log(line.width, line.height);
-					normBlock.lines.push(line);
+					block.lines.push(line);
 				} //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
 
-				console.log("block", normBlock);
+				console.log("block", block);
 
 				blocks.push(blockVer);
 
-				blocks[iterator].normal = normBlock;
+				if(lines.length > 1 && chapterTitle == false){
 
+					let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
 
+					switch(flyspeak){
+						case true :
+							flyspeakArray.push(block);
+							break;
+						case false :
+							blocks[iterator].push(block);
+							break;
+					}					
+
+				}else{
+					blocks[iterator].push(block);
+				}
 
 				console.log("blocks", blocks);
 
 				if (chapterTitle) {
 
-					blocks[iterator].expand = normBlock;
-					blocks[iterator].reduced = normBlock;
+					blocks[iterator][0].break_after = this.data_break_after;
+					blocks[iterator][0].break_before = this.data_break_before;
 
 					rendered.parentNode.remove();
 					rendered.remove();
@@ -276,13 +237,15 @@ class Layout {
 					console.log("expand");
 					let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
 					let currentSize = parseFloat(elementStyle);
-					rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
+					rendered.style.wordSpacing = (currentSize + 0.05) + 'em';
 
 					renderedBounding = rendered.getBoundingClientRect();
 					lines = getClientRects(rendered.firstChild);
 
-					exBlock.tagName = rendered.tagName;
-					exBlock.ref = rendered.getAttribute("data-ref");
+					let exBlock = JSON.parse(JSON.stringify(block));
+
+					exBlock.lines = [];
+					exBlock.type = "expand";
 					exBlock.width = renderedBounding.width;
 					exBlock.height = renderedBounding.height;
 					exBlock.left = renderedBounding.left;
@@ -294,18 +257,35 @@ class Layout {
 
 					}
 
-					blocks[iterator].expand = exBlock;
+					if(lines.length > 1 && chapterTitle == false){
 
-					console.log("EXPAND", blocks[iterator].expand.height, blocks[iterator].expand.lines[lines.length - 1].width);
+						let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
+
+						switch(flyspeak){
+							case true :
+								flyspeakArray.push(exBlock);
+								break;
+							case false :
+								blocks[iterator].push(exBlock);
+								break;
+						}					
+	
+					}else{
+						blocks[iterator].push(exBlock);
+					}
+	
+					//console.log("EXPAND", blocks[iterator].expand.height, blocks[iterator].expand.lines[lines.length - 1].width);
 					//Reduce
 
-					rendered.style.wordSpacing = (currentSize - 1) + 'px';
+					rendered.style.wordSpacing = (currentSize - 0.05) + 'em';
 
 					renderedBounding = rendered.getBoundingClientRect();
 					lines = getClientRects(rendered.firstChild);
 
-					redBlock.tagName = rendered.tagName;
-					redBlock.ref = rendered.getAttribute("data-ref");
+					let redBlock = JSON.parse(JSON.stringify(block));
+
+					redBlock.lines = [];
+					redBlock.type = "reduced";
 					redBlock.width = renderedBounding.width;
 					redBlock.height = renderedBounding.height;
 					redBlock.left = renderedBounding.left;
@@ -316,16 +296,45 @@ class Layout {
 						redBlock.lines.push(line);
 					}
 
-					blocks[iterator].reduced = redBlock;
+					if(lines.length > 1 && chapterTitle == false){
+
+						let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
+	
+						switch(flyspeak){
+							case true :
+								flyspeakArray.push(redBlock);
+								break;
+							case false :
+								blocks[iterator].push(redBlock);
+								break;
+						}					
+	
+					}else{
+						blocks[iterator].push(redBlock);
+					}
+
+					console.log("flyspeakArray",flyspeakArray);
+
+					if(flyspeakArray.length == 3){
+						
+						//let int = this.getRandomInt(3);
+
+						//let winnerBlock = flyspeakArray[int];
+
+						blocks[iterator].push(flyspeakArray[1]);
+						
+					}
+
 					rendered.remove();
 				}
+
+				flyspeakArray = []; //azzero l'array
 
 				iterator = iterator + 1;
 
 			}
 
 			//length += rendered.textContent.length; //Textlength in page, Prende solo la lunghezza del testo, se ha un container, giustamente non prende niente
-			console.log("length", length);
 			// Check if layout has content yet
 			if (!hasRenderedContent) {
 				hasRenderedContent = hasContent(node);
@@ -340,7 +349,7 @@ class Layout {
 
 			// Only check x characters
 			//Noi all'inizio non sappiamo quanto sia la lunghezza effettiva della pagina, ma superato il default di 1500 di lunghezza, cerca un breaktoken
-			if (length >= this.maxChars) {
+			/*if (length >= this.maxChars) {
 
 				this.hooks && this.hooks.layout.trigger(wrapper, this);
 
@@ -354,162 +363,12 @@ class Layout {
 				if (newBreakToken) {
 					length = 0;
 				}
-			}
+			}*/
 
 		}
-		console.log(blocks);
+		
 		return blocks;
 		//return newBreakToken;
-	}
-
-	//METODO MODIFICATO
-
-	async renderTo(wrapper, source, breakToken, fit, bounds = this.bounds) {
-		//Al primo giro, la source è il capitolo e il breakToken è false
-		let start = this.getStart(source, breakToken);
-		//Start è il capitolo all'inizio
-		let walker = walk(start, source); //start: l'oggetto d'attraversare, source The "className" for the root object
-		console.log("Walker", walker);
-
-		this.fit = fit;
-
-		let node;
-		let done;
-		let next;
-
-		let hasRenderedContent = false;
-		let newBreakToken;
-
-		let length = 0;
-
-		while (!done && !newBreakToken) {
-			next = walker.next(); //Scorre gli elementi di source
-			node = next.value; //Prende il valore HTML
-			console.log("next.value", next);
-			done = next.done; //true una volta terminato (callback)
-
-			if (!node) {
-				this.hooks && this.hooks.layout.trigger(wrapper, this);
-				let imgs = wrapper.querySelectorAll("img");
-				if (imgs.length) { //Se è un immagine, cerca la grandezza
-					await this.waitForImages(imgs);
-				}
-
-				newBreakToken = this.findBreakToken(wrapper, source, bounds);
-				return newBreakToken;
-			}
-
-			this.hooks && this.hooks.layoutNode.trigger(node);
-
-			// Check if the rendered element has a break set
-			//Ad esempio i tag section
-			if (hasRenderedContent && this.shouldBreak(node)) {
-
-				this.hooks && this.hooks.layout.trigger(wrapper, this);
-
-				let imgs = wrapper.querySelectorAll("img");
-				if (imgs.length) {
-					await this.waitForImages(imgs);
-				}
-				console.log("Section !!!!!!");
-				newBreakToken = this.findBreakToken(wrapper, source, bounds);
-
-				if (!newBreakToken) {
-					newBreakToken = this.breakAt(node);
-				}
-
-				length = 0;
-
-				break;
-			}
-
-			// Should the Node be a shallow or deep clone
-			let shallow = isContainer(node); //boolean
-			console.log(node, wrapper, "Breaktoken", breakToken, shallow);
-			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
-			let rendered = this.append(node, wrapper, breakToken, shallow); //Qui sta la chiave
-
-			console.log("renderedRenderTo",rendered);
-			//Inserisco il check del fittingAlg
-			if (isText(rendered.firstChild)) {
-				let data_ref = rendered.getAttribute("data-ref");
-				console.log("rendered.data-ref", data_ref);
-				let exist = false;
-				let found;
-
-				for (let i = 0; i < fit.pages.length; i++) {
-
-					let checkRef = (block) => block.ref === data_ref;
-
-					found = fit.pages[i].findIndex(checkRef);
-
-					if (found != -1) {
-						console.log(found);
-						exist = true;
-						var pageNum = i;
-						break;
-					}
-				}
-
-
-				if (exist) {
-
-					let rects = getClientRects(rendered.firstChild);
-					let rect;
-					for (var i = 0; i != rects.length; i++) {
-						rect = rects[i];
-						console.log("rect heigt", rect);
-					}
-
-					if (fit.pages[pageNum][found].type === "expand") {
-						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
-						let currentSize = parseFloat(elementStyle);
-						rendered.style.wordSpacing = (currentSize + 0.05) + 'px';
-					}
-
-					if (fit.pages[pageNum][found].type === "reduced") {
-						let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
-						let currentSize = parseFloat(elementStyle);
-						rendered.style.wordSpacing = (currentSize - 1) + 'px';
-					}
-				}
-
-				console.log("exist", exist);
-			}
-			console.log("Rendered", rendered);
-			length += rendered.textContent.length;
-
-			// Check if layout has content yet
-			if (!hasRenderedContent) {
-				hasRenderedContent = hasContent(node);
-			}
-
-			// Skip to the next node if a deep clone was rendered
-			if (!shallow) {
-				walker = walk(nodeAfter(node, source), source);
-				console.log("Walk After", walker);
-			}
-
-			// Only check x characters
-			if (length >= this.maxChars) {
-
-				this.hooks && this.hooks.layout.trigger(wrapper, this);
-
-				let imgs = wrapper.querySelectorAll("img");
-				if (imgs.length) {
-					await this.waitForImages(imgs);
-				}
-
-				newBreakToken = this.findBreakToken(wrapper, source, bounds);
-
-				if (newBreakToken) {
-					length = 0;
-				}
-			}
-
-		}
-
-		return newBreakToken;
 	}
 
 	checkRef(block, data_ref) {
@@ -530,7 +389,9 @@ class Layout {
 			//all'inizio inserisco subito tutto dentro. 
 			if (index == 0) { //Se è il primo blocco devo creare le tre sequenze iniziali da cui poi far partire l'iterazione
 				let i = 0;
-				for (let [ver, prop] of Object.entries(block)) {
+				for (let u = 0 ; u < block.length ; u ++) {
+
+					let prop = block[u];
 
 					//Creo le prime tre sequenze
 
@@ -545,12 +406,12 @@ class Layout {
 
 					//Crea il blocco prendendo le informazioni da prop
 
-					let firstBlock = this.createBlock(index, ver, prop);
+					let firstBlock = this.createBlock(index, prop);
 
 					sequence.blocks = 1;
 					sequence.current_page_height = prop.height;
 					sequence.current_lines = prop.lines.length;
-					sequence.lastBlock_type = ver;
+					sequence.lastBlock_type = prop.type;
 
 					//Aggiungo alla sequenza le informazioni sul blocco aggiunto
 					A.push(sequence);
@@ -574,8 +435,10 @@ class Layout {
 
 				for (let i = 0; i < solutionsLength; i++) {
 
-					for (let [ver, prop] of Object.entries(block)) {
+					for (let u = 0 ; u < block.length ; u ++) {
 
+						let prop = block[u];
+						
 						let clonedArray = A.slice(0, 1);
 						let clonedObject = clonedArray[0];
 						let referenceSequence = JSON.parse(JSON.stringify(clonedObject)); //Faccio una copia della sequenza di riferimento
@@ -585,16 +448,47 @@ class Layout {
 
 						console.log("referenceSequence", referenceSequence);
 
+						let currentPage = referenceSequence.pages.length;
+
+						let currentPosition = currentPage % 2 === 0 ? "left" : "right";
+
+						if(prop.break_before === "right"){
+							if(currentPosition === "right"){
+
+								//Aggiungo una pagina bianca
+
+								let blankPage = [];
+
+								referenceSequence.pages.push(blankPage);
+
+								let newPage = [];
+
+								referenceSequence.pages.push(newPage);
+
+								currentHeight = 0;
+								current_lines = 0;
+
+							}else{
+							
+								let newPage = [];
+
+								referenceSequence.pages.push(newPage);
+
+								currentHeight = 0;
+								current_lines = 0;
+							}
+						}
+
 						if (currentHeight + prop.height < pageHeight) {
 
-							let paragraph = this.createBlock(index, ver, prop);
+							let paragraph = this.createBlock(index, prop);
 
 							console.log(paragraph);
 
 							referenceSequence.blocks = referenceSequence.blocks + 1;
 							referenceSequence.current_page_height = currentHeight + prop.height;
 							referenceSequence.current_lines = current_lines + paragraph.lines;
-							referenceSequence.lastBlock_type = ver;
+							referenceSequence.lastBlock_type = prop.type;
 							referenceSequence.pages[referenceSequence.pages.length - 1].push(paragraph);
 
 							console.log("New Reference Sequence", referenceSequence);
@@ -613,8 +507,8 @@ class Layout {
 
 								complete = false;
 
-								let beforeBreakPar = this.createBlock(index, ver, prop, complete);
-								let afterBreakPar = this.createBlock(index, ver, prop, complete);
+								let beforeBreakPar = this.createBlock(index, prop, complete);
+								let afterBreakPar = this.createBlock(index, prop, complete);
 
 								let newPage = [];
 
@@ -635,7 +529,7 @@ class Layout {
 								referenceSequence.blocks += 1;
 								referenceSequence.current_page_height = score.overflow;
 								referenceSequence.current_lines = score.linesAfter;
-								referenceSequence.lastBlock_type = ver;
+								referenceSequence.lastBlock_type = prop.type;
 
 								A.push(referenceSequence);
 								console.log(beforeBreakPar, afterBreakPar);
@@ -717,7 +611,7 @@ class Layout {
 		return Math.floor(Math.random() * Math.floor(max));
 	}
 
-	createBlock(index, ver, prop, complete = true) {
+	createBlock(index, prop, complete = true) {
 
 		let paragraph = {
 			block: 0,
@@ -731,7 +625,7 @@ class Layout {
 		paragraph.block = index;
 		paragraph.tag = prop.tagName;
 		paragraph.ref = prop.ref;
-		paragraph.type = ver;
+		paragraph.type = prop.type;
 
 		if (!complete) {
 			paragraph.complete = false;
@@ -853,11 +747,22 @@ class Layout {
 			}
 		}
 		else {
-			dest.appendChild(clone);
+			let previousSibling = (node.previousSibling) ? true : false;
+			if(previousSibling && node.previousSibling.tagName === "SECTION"){
+				
+				dest.appendChild(clone);
+				clone.previousSibling.remove();
+
+			}else{
+				dest.appendChild(clone);
+			}
+			
+			
 		}
 
 		return clone;
 	}
+
 	//Clona il nodo della pagina.
 
 	append(node, dest, breakToken, shallow = true, rebuild = true) {

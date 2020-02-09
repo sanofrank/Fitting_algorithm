@@ -1,8 +1,8 @@
 import Handler from "../handler";
 
 class Lists extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 	}
 	afterParsed(content) {
 		const orderedLists = content.querySelectorAll("ol");

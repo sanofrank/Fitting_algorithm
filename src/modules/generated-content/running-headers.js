@@ -2,8 +2,8 @@ import Handler from "../handler";
 import csstree from "css-tree";
 
 class RunningHeaders extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 
 		this.runningSelectors = {};
 		this.elements = {};
@@ -74,7 +74,6 @@ class RunningHeaders extends Handler {
 		for (let name of Object.keys(this.runningSelectors)) {
 			let set = this.runningSelectors[name];
 			let selected = Array.from(fragment.querySelectorAll(set.selector));
-
 			if (set.identifier === "running") {
 				for (let header of selected) {
 					header.style.display = "none";

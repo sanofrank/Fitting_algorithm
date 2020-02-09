@@ -122,22 +122,6 @@ class Page {
 	}
 	*/
 
-	async layout(contents, breakToken, maxChars, fit) {
-		
-		this.clear();
-		console.log("layout in page", fit);
-		this.startToken = breakToken;
-
-		this.layoutMethod = new Layout(this.area, this.hooks, maxChars);
-
-		let newBreakToken = await this.layoutMethod.renderTo(this.wrapper, contents, breakToken, fit);
-
-		this.addListeners(contents);
-
-		this.endToken = newBreakToken;
-
-		return newBreakToken;
-	}
 
 	async simpleFitting(contents,breakToken, maxChars){
 
@@ -148,6 +132,8 @@ class Page {
 		this.layoutMethod = new Layout(this.area, this.hooks, maxChars);
 
 		let blocks = await this.layoutMethod.renderBlocks(this.wrapper, contents, breakToken);
+
+		console.log(blocks);
 
 		let sequence = await this.layoutMethod.getSequence(blocks);
 

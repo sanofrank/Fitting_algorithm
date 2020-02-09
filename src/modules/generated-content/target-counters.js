@@ -3,8 +3,8 @@ import { UUID, attr, querySelectorEscape } from "../../utils/utils";
 import csstree from "css-tree";
 
 class TargetCounters extends Handler {
-	constructor(chunker, polisher, caller) {
-		super(chunker, polisher, caller);
+	constructor(chunker, polisher, fitter, caller) {
+		super(chunker, polisher, fitter, caller);
 
 		this.styleSheet = polisher.styleSheet;
 
@@ -73,6 +73,7 @@ class TargetCounters extends Handler {
 	}
 
 	afterPageLayout(fragment, page, breakToken, chunker) {
+		console.log("name afterPageLayout",chunker);
 		Object.keys(this.counterTargets).forEach((name) => {
 			let target = this.counterTargets[name];
 			let split = target.selector.split("::");
