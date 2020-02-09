@@ -166,7 +166,7 @@ export function rebuildAncestors(node) {
 			fragment.appendChild(parent);
 		}
 		added.push(parent);
-		console.log(added);
+		console.log("Added",added);
 	}
 	
 	added = undefined;

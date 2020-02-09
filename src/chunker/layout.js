@@ -122,7 +122,7 @@ class Layout {
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
 			let rendered = this.append(node, wrapper, breakToken, shallow);
 
-			if (isText(rendered.firstChild)) {
+			if (!shallow) {
 				let data_ref = rendered.getAttribute("data-ref");
 				console.log("rendered.data-ref", data_ref);
 				let exist = false;
@@ -275,7 +275,61 @@ class Layout {
 			}
 		});
 
+		this.getStyle(clone.parentNode);
+
 		return clone;
+	}
+
+	getStyle(node){
+
+		console.log("node.firstChild",node);
+
+		if (isText(node.firstChild)) {
+			let data_ref = node.getAttribute("data-ref");
+			console.log("rendered.data-ref", data_ref);
+			let exist = false;
+			let found;
+
+			for (let i = 0; i < this.sequence.pages.length; i++) {
+
+				let checkRef = (block) => block.ref === data_ref;
+
+				found = this.sequence.pages[i].findIndex(checkRef);
+
+				if (found != -1) {
+					console.log(found);
+					exist = true;
+					var pageNum = i;
+					break;
+				}
+			}
+
+
+			if (exist) {
+
+				let rects = getClientRects(node.firstChild);
+				let rect;
+				for (var i = 0; i != rects.length; i++) {
+					rect = rects[i];
+					console.log("rect heigt", rect);
+				}
+
+				if (this.sequence.pages[pageNum][found].type === "expand") {
+					let elementStyle = window.getComputedStyle(node, null).getPropertyValue('word-spacing');
+					let currentSize = parseFloat(elementStyle);
+					node.style.wordSpacing = (currentSize + 0.05) + 'em';
+				}
+
+				if (this.sequence.pages[pageNum][found].type === "reduced") {
+					let elementStyle = window.getComputedStyle(node, null).getPropertyValue('word-spacing');
+					let currentSize = parseFloat(elementStyle);
+					node.style.wordSpacing = (currentSize - 0.05) + 'em';
+				}
+			}
+
+			console.log("exist", exist);
+		}
+
 	}
 
 	async waitForImages(imgs) {

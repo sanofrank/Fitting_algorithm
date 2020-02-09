@@ -78,7 +78,7 @@ class Layout {
 
 		let hasRenderedContent = false;
 
-		let flyspeakArray = [];
+		let flyspeckArray = [];
 
 		//let newBreakToken;
 
@@ -168,8 +168,8 @@ class Layout {
 				console.log(isText(rendered.firstChild));
 				let lines = getClientRects(rendered.firstChild); //La length sono le righe
 
-				let flyspeakLimit = (renderedBounding.width/100)*15; //get the 10% of the boundingClientRect of the block
-				console.log("flyspeakLimit", flyspeakLimit);
+				let flyspeckLimit = (renderedBounding.width/100)*15; //get the 10% of the boundingClientRect of the block
+				console.log("flyspeckLimit", flyspeckLimit);
 
 
 				console.log("node shallow", rendered);
@@ -183,22 +183,7 @@ class Layout {
 					chapterTitle = true;
 				}
 
-				block.tagName = rendered.tagName;
-				block.ref = rendered.getAttribute("data-ref");
-				block.type = "normal";
-				block.width = renderedBounding.width;
-				block.height = renderedBounding.height;
-				block.left = renderedBounding.left;
-				block.right = renderedBounding.right;
-				
-
-				let line;
-
-				for (var i = 0; i != lines.length; i++) { //ogni riga.
-					line = lines[i];
-					console.log(line.width, line.height);
-					block.lines.push(line);
-				} //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
+				block = this.createBlock(block,rendered,renderedBounding,lines,"normal");
 
 				console.log("block", block);
 
@@ -206,11 +191,11 @@ class Layout {
 
 				if(lines.length > 1 && chapterTitle == false){
 
-					let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
+					let flyspeck = (lines[lines.length - 1].width <= flyspeckLimit) ? true : false;
 
-					switch(flyspeak){
+					switch(flyspeck){
 						case true :
-							flyspeakArray.push(block);
+							flyspeckArray.push(block);
 							break;
 						case false :
 							blocks[iterator].push(block);
@@ -245,25 +230,16 @@ class Layout {
 					let exBlock = JSON.parse(JSON.stringify(block));
 
 					exBlock.lines = [];
-					exBlock.type = "expand";
-					exBlock.width = renderedBounding.width;
-					exBlock.height = renderedBounding.height;
-					exBlock.left = renderedBounding.left;
-					exBlock.right = renderedBounding.right;
 
-					for (let i = 0; i != lines.length; i++) { //ogni riga.
-						line = lines[i];
-						exBlock.lines.push(line);
-
-					}
+					exBlock = this.createBlock(exBlock,rendered,renderedBounding,lines,"expand");
 
 					if(lines.length > 1 && chapterTitle == false){
 
-						let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
+						let flyspeck = (lines[lines.length - 1].width <= flyspeckLimit) ? true : false;
 
-						switch(flyspeak){
+						switch(flyspeck){
 							case true :
-								flyspeakArray.push(exBlock);
+								flyspeckArray.push(exBlock);
 								break;
 							case false :
 								blocks[iterator].push(exBlock);
@@ -285,24 +261,16 @@ class Layout {
 					let redBlock = JSON.parse(JSON.stringify(block));
 
 					redBlock.lines = [];
-					redBlock.type = "reduced";
-					redBlock.width = renderedBounding.width;
-					redBlock.height = renderedBounding.height;
-					redBlock.left = renderedBounding.left;
-					redBlock.right = renderedBounding.right;
 
-					for (let i = 0; i != lines.length; i++) { //ogni riga.
-						line = lines[i];
-						redBlock.lines.push(line);
-					}
+					redBlock = this.createBlock(redBlock,rendered,renderedBounding,lines,"reduced");
 
 					if(lines.length > 1 && chapterTitle == false){
 
-						let flyspeak = (lines[lines.length - 1].width <= flyspeakLimit) ? true : false;
+						let flyspeck = (lines[lines.length - 1].width <= flyspeckLimit) ? true : false;
 	
-						switch(flyspeak){
+						switch(flyspeck){
 							case true :
-								flyspeakArray.push(redBlock);
+								flyspeckArray.push(redBlock);
 								break;
 							case false :
 								blocks[iterator].push(redBlock);
@@ -313,22 +281,22 @@ class Layout {
 						blocks[iterator].push(redBlock);
 					}
 
-					console.log("flyspeakArray",flyspeakArray);
+					console.log("flyspeckArray",flyspeckArray);
 
-					if(flyspeakArray.length == 3){
+					if(flyspeckArray.length == 3){
 						
 						//let int = this.getRandomInt(3);
 
-						//let winnerBlock = flyspeakArray[int];
+						//let winnerBlock = flyspeckArray[int];
 
-						blocks[iterator].push(flyspeakArray[1]);
+						blocks[iterator].push(flyspeckArray[1]);
 						
 					}
 
 					rendered.remove();
 				}
 
-				flyspeakArray = []; //azzero l'array
+				flyspeckArray = []; //azzero l'array
 
 				iterator = iterator + 1;
 
@@ -371,6 +339,33 @@ class Layout {
 		//return newBreakToken;
 	}
 
+
+	createBlock(block,rendered,renderedBounding,lines,type){
+
+		block.tagName = rendered.tagName;
+		block.ref = rendered.getAttribute("data-ref");
+		block.type = type;
+		block.width = renderedBounding.width;
+		block.height = renderedBounding.height;
+		block.left = renderedBounding.left;
+		block.right = renderedBounding.right;
+
+		let line;
+
+		for (var i = 0; i != lines.length; i++) { //ogni riga.
+			line = lines[i];
+			console.log(line.width, line.height);
+			block.lines.push(line);
+		} //Sostanzialmente la stessa cosa che facevo io, ma con le parole.
+
+		return block;
+		
+	}
+
+	checkFlyspeck(){
+
+	}
+
 	checkRef(block, data_ref) {
 		console.log("block, data_ref", block, data_ref);
 		if (block.ref === data_ref) {
@@ -406,7 +401,7 @@ class Layout {
 
 					//Crea il blocco prendendo le informazioni da prop
 
-					let firstBlock = this.createBlock(index, prop);
+					let firstBlock = this.addBlock(index, prop);
 
 					sequence.blocks = 1;
 					sequence.current_page_height = prop.height;
@@ -481,15 +476,11 @@ class Layout {
 
 						if (currentHeight + prop.height < pageHeight) {
 
-							let paragraph = this.createBlock(index, prop);
+							let paragraph = this.addBlock(index, prop);
 
 							console.log(paragraph);
 
-							referenceSequence.blocks = referenceSequence.blocks + 1;
-							referenceSequence.current_page_height = currentHeight + prop.height;
-							referenceSequence.current_lines = current_lines + paragraph.lines;
-							referenceSequence.lastBlock_type = prop.type;
-							referenceSequence.pages[referenceSequence.pages.length - 1].push(paragraph);
+							referenceSequence = this.updateSequence(referenceSequence,currentHeight,prop,current_lines,paragraph);
 
 							console.log("New Reference Sequence", referenceSequence);
 
@@ -500,6 +491,7 @@ class Layout {
 						} else {
 							console.log("A before break", A);
 							console.log(prop);
+
 							let score = this.calcScore(currentHeight, pageHeight, prop);
 
 							console.log("score", score);
@@ -507,8 +499,8 @@ class Layout {
 
 								complete = false;
 
-								let beforeBreakPar = this.createBlock(index, prop, complete);
-								let afterBreakPar = this.createBlock(index, prop, complete);
+								let beforeBreakPar = this.addBlock(index, prop, complete);
+								let afterBreakPar = this.addBlock(index, prop, complete);
 
 								let newPage = [];
 
@@ -525,11 +517,7 @@ class Layout {
 								referenceSequence.pages.push(newPage);
 
 								//Aggiorno le informazioni della sequenza
-								referenceSequence.score = score.score;
-								referenceSequence.blocks += 1;
-								referenceSequence.current_page_height = score.overflow;
-								referenceSequence.current_lines = score.linesAfter;
-								referenceSequence.lastBlock_type = prop.type;
+								referenceSequence = this.updateSequence(referenceSequence,currentHeight,prop,current_lines,afterBreakPar,score);
 
 								A.push(referenceSequence);
 								console.log(beforeBreakPar, afterBreakPar);
@@ -611,7 +599,7 @@ class Layout {
 		return Math.floor(Math.random() * Math.floor(max));
 	}
 
-	createBlock(index, prop, complete = true) {
+	addBlock(index, prop, complete = true) {
 
 		let paragraph = {
 			block: 0,
@@ -636,7 +624,28 @@ class Layout {
 		return paragraph;
 	}
 
+	updateSequence(referenceSequence,currentHeight,prop,current_lines,paragraph, score = undefined){
 
+		if(score != undefined){
+
+			referenceSequence.score = score.score;
+			referenceSequence.blocks += 1;
+			referenceSequence.current_page_height = score.overflow;
+			referenceSequence.current_lines = score.linesAfter;
+			referenceSequence.lastBlock_type = prop.type;
+
+		}else{
+
+			referenceSequence.blocks = referenceSequence.blocks + 1;
+			referenceSequence.current_page_height = currentHeight + prop.height;
+			referenceSequence.current_lines = current_lines + paragraph.lines;
+			referenceSequence.lastBlock_type = prop.type;
+			referenceSequence.pages[referenceSequence.pages.length - 1].push(paragraph);
+
+		}
+
+		return referenceSequence;
+	}
 
 	getBestSequence(A) {
 
