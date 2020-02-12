@@ -362,10 +362,6 @@ class Layout {
 		
 	}
 
-	checkFlyspeck(){
-
-	}
-
 	checkRef(block, data_ref) {
 		console.log("block, data_ref", block, data_ref);
 		if (block.ref === data_ref) {
@@ -504,10 +500,12 @@ class Layout {
 
 								let newPage = [];
 
-								beforeBreakPar.lines = score.linesBefore;
+								if(score.linesBefore != 0){
+									beforeBreakPar.lines = score.linesBefore;
 
-								//Aggiungo il blocco beforeBreak
-								referenceSequence.pages[referenceSequence.pages.length - 1].push(beforeBreakPar);
+									//Aggiungo il blocco beforeBreak
+									referenceSequence.pages[referenceSequence.pages.length - 1].push(beforeBreakPar);
+								}
 
 								afterBreakPar.lines = score.linesAfter;
 								afterBreakPar.complete = true;
@@ -1356,12 +1354,12 @@ class Layout {
 
 						if (currentHeight > pageHeight) {
 							linesAfter = lineNum - linesBefore;
+							overflow = prop.height - breakParHeight;
 							break;
 						}
 
 						breakParHeight = breakParHeight + lineHeight;
 						console.log("breakParHeight",breakParHeight);
-						overflow = prop.height - breakParHeight;
 
 						linesBefore += 1;
 					}
