@@ -159,33 +159,23 @@ class Layout {
 			
 			//Se è testo prendo le informazioni e rimuovo il blocco dalla pagina.
 			if (!shallow) {
-				console.log("isText", rendered.textContent);
 
 				//Crea un blocco nuovo ogni iterazione
 
 				let chapterTitle = false;
-				let renderedBounding = rendered.getBoundingClientRect();
-				console.log(isText(rendered.firstChild));
-				let lines = getClientRects(rendered.firstChild); //La length sono le righe
-
+				let renderedBounding = getBoundingClientRect(rendered);
+				let lines = this.getLines(rendered,wrapper,renderedBounding);
+				
 				let flyspeckLimit = (renderedBounding.width/100)*15; //get the 10% of the boundingClientRect of the block
-				console.log("flyspeckLimit", flyspeckLimit);
 
-
-				console.log("node shallow", rendered);
-				console.log("lines", lines);
 				let parent = rendered.parentNode.tagName;
 
 				if (parent == "HEADER") {
 					renderedBounding = rendered.parentElement.getBoundingClientRect();
-					
-					console.log("headerClientRects",renderedBounding,getClientRects(rendered));
 					chapterTitle = true;
 				}
 
 				block = this.createBlock(block,rendered,renderedBounding,lines,"normal");
-
-				console.log("block", block);
 
 				blocks.push(blockVer);
 
@@ -219,13 +209,12 @@ class Layout {
 				} else {
 
 					//Expand	
-					console.log("expand");
 					let elementStyle = window.getComputedStyle(rendered, null).getPropertyValue('word-spacing');
 					let currentSize = parseFloat(elementStyle);
 					rendered.style.wordSpacing = (currentSize + 0.05) + 'em';
 
 					renderedBounding = rendered.getBoundingClientRect();
-					lines = getClientRects(rendered.firstChild);
+					lines = this.getLines(rendered,wrapper,renderedBounding);
 
 					let exBlock = JSON.parse(JSON.stringify(block));
 
@@ -250,13 +239,12 @@ class Layout {
 						blocks[iterator].push(exBlock);
 					}
 	
-					//console.log("EXPAND", blocks[iterator].expand.height, blocks[iterator].expand.lines[lines.length - 1].width);
 					//Reduce
 
 					rendered.style.wordSpacing = (currentSize - 0.05) + 'em';
 
 					renderedBounding = rendered.getBoundingClientRect();
-					lines = getClientRects(rendered.firstChild);
+					lines = this.getLines(rendered,wrapper,renderedBounding);
 
 					let redBlock = JSON.parse(JSON.stringify(block));
 
@@ -369,15 +357,132 @@ class Layout {
 		}
 	}
 
+	getLines(rendered, wrapper, renderedBounding){
+		
+		let renderedHeight = renderedBounding.height;
+		let end =  wrapper.right;
+
+		let walker = walk(rendered.firstChild, rendered);
+
+		let next, done, node;
+
+		let currentLeft, currentY, currentRight, currentWidth;
+		let currentHeight = 0;
+		let lines = [];
+		let line;
+		let left = 0;
+		let y = 0;
+		let right = 0;
+		let width = 0;
+
+		while(!done){
+			
+			next = walker.next();
+			done = next.done;
+			node = next.value;
+
+			if(node){
+
+				let pos = getBoundingClientRect(node);
+				let posLines = getClientRects(node);
+
+				let posRight = pos.right;
+
+				console.log(pos);
+
+				if(isText(node) &&
+				node.textContent.trim().length &&
+				window.getComputedStyle(node.parentNode)["break-inside"] !== "avoid"){
+
+					if(lines.length == 0){
+						y = posLines[0].y;
+					}
+					
+
+					for(let i  = 0; i < posLines.length; i++){
+						
+						line = posLines[i];
+
+						currentLeft = line.left; 
+						currentY = line.y;
+						currentRight = line.right;
+						currentWidth = line.width;
+
+						if(currentLeft <= left){
+							
+							let newLine = {
+								height : 0,
+								right : 0,
+								width: 0
+							};
+
+							newLine.height = currentY - y;
+							newLine.right = right;
+							newLine.width = width;
+							
+							lines.push(newLine);
+
+							left = currentLeft;
+							y = currentY;
+							right = currentRight;	
+							width = currentWidth;						
+
+							currentHeight = currentHeight + lines[lines.length - 1].height;
+
+						}else{
+
+							left = currentLeft;
+							
+							if(y > currentY){
+								y = currentY;
+							}
+
+							right = currentRight;
+							width = width + currentWidth;							
+
+						}	
+					}
+				}
+
+				if(posRight < end){
+					next = nodeAfter(node, rendered);
+				 if(next) {
+						walker = walk(next, rendered);
+					}
+				}
+			}else{
+
+				let lastLine = {
+					height : 0,
+					right : 0,
+					width: 0
+				};
+		
+				lastLine.height = renderedHeight - currentHeight;
+				lastLine.right = currentRight;
+				lastLine.width = width;
+
+				lines.push(lastLine);
+			}
+		}
+
+		return lines;
+	}
+
+
 	getSequence(blocks, bounds = this.bounds) {
 
 		let A = []; // Array di sequenze
 		let pageHeight = bounds.height;
 		let complete;
 
-		for (const [index, block] of blocks.entries()) {
+		for (let index = 0; index < blocks.length; index++) {
 			//creo l'array di sequenze e itero all'interno.
-			//all'inizio inserisco subito tutto dentro. 
+			//all'inizio inserisco subito tutto dentro.
+			//const [index, block] of blocks.entries()
+
+			let block = blocks[index];
+
 			if (index == 0) { //Se è il primo blocco devo creare le tre sequenze iniziali da cui poi far partire l'iterazione
 				let i = 0;
 				for (let u = 0 ; u < block.length ; u ++) {
@@ -411,10 +516,7 @@ class Layout {
 					A[i].pages.push(newPage);
 					A[i].pages[0].push(firstBlock);
 
-					console.log("pagine", A[i].pages);
-
 					i++;
-					console.log(A);
 
 				}
 
@@ -436,8 +538,6 @@ class Layout {
 
 						let currentHeight = referenceSequence.current_page_height;
 						let current_lines = referenceSequence.current_lines;
-
-						console.log("referenceSequence", referenceSequence);
 
 						let currentPage = referenceSequence.pages.length;
 
@@ -474,23 +574,14 @@ class Layout {
 
 							let paragraph = this.addBlock(index, prop);
 
-							console.log(paragraph);
-
 							referenceSequence = this.updateSequence(referenceSequence,currentHeight,prop,current_lines,paragraph);
-
-							console.log("New Reference Sequence", referenceSequence);
 
 							A.push(referenceSequence);
 
-							console.log("A", A);
-
 						} else {
-							console.log("A before break", A);
-							console.log(prop);
 
-							let score = this.calcScore(currentHeight, pageHeight, prop);
+							let score = this.calcScore(currentHeight, pageHeight, prop, blocks, index);
 
-							console.log("score", score);
 							if (score.score > 0) {
 
 								complete = false;
@@ -518,7 +609,6 @@ class Layout {
 								referenceSequence = this.updateSequence(referenceSequence,currentHeight,prop,current_lines,afterBreakPar,score);
 
 								A.push(referenceSequence);
-								console.log(beforeBreakPar, afterBreakPar);
 							}
 
 
@@ -1314,7 +1404,7 @@ class Layout {
 		return offset;
 	}
 
-	calcScore(currentHeight, pageHeight, prop) {
+	calcScore(currentHeight, pageHeight, prop, blocks, index) {
 
 		let lines = prop.lines;
 		let score;
@@ -1322,6 +1412,10 @@ class Layout {
 		let linesAfter;
 		let lineNum = lines.length;
 		let overflow = 0;
+
+		if(lines.length == 1 && blocks[index+1][0].break_before === "right"){
+			return score = 0.2;
+		}
 
 		if (lines.length == 1) {
 			score = 1;
@@ -1336,8 +1430,7 @@ class Layout {
 			};
 		} else {
 			if (lines.length <= 3) {
-				score = 0;
-				return score;
+				return score = 0;
 			} else {
 				let lineHeight;
 				let breakParHeight = 0;
@@ -1348,7 +1441,7 @@ class Layout {
 
 					if(next != undefined){
 
-						lineHeight = next.top - lines[i].top;
+						lineHeight = lines[i].height;
 
 						currentHeight = currentHeight + lineHeight;
 
