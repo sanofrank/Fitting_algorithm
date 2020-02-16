@@ -101,6 +101,8 @@ class Layout {
 	
 			let blockVer = [];
 
+			let divContainer = false;
+
 			next = walker.next(); //Scorre gli elementi di source
 			node = next.value; //Prende il valore HTML
 			console.log("next.value", node);
@@ -145,6 +147,13 @@ class Layout {
 			let shallow = isContainer(node); //Valore boolean che si attiva nel caso sia un tipo DIV
 			console.log(node, wrapper, "Breaktoken", breakToken, shallow);
 			//console.log("breakToken", breakToken); //Il breakToken è il paragrafo intero che va tagliato.
+
+			if(shallow && node.tagName == "DIV"){
+
+				divContainer = true;
+				shallow = false;
+			}
+
 			let rendered = this.appendModified(node, wrapper, shallow);
 			console.log("rendered", rendered);
 
@@ -156,10 +165,12 @@ class Layout {
 				
 				}
 			}
+
+
 			
 			//Se è testo prendo le informazioni e rimuovo il blocco dalla pagina.
-			if (!shallow) {
-
+			if (!shallow && divContainer == false) {
+			
 				//Crea un blocco nuovo ogni iterazione
 
 				let chapterTitle = false;
@@ -290,6 +301,25 @@ class Layout {
 
 			}
 
+			if(divContainer == true){
+
+				let renderedBounding = getBoundingClientRect(rendered);
+				console.log("divContainer",renderedBounding);
+				let lines = [];
+
+				block = this.createBlock(block,rendered,renderedBounding,lines,"normal");
+
+				block.break_after = "avoid";
+				block.break_before = "avoid";
+
+				blocks.push(blockVer);
+				blocks[iterator].push(block);
+
+				iterator ++;
+
+				rendered.remove();
+			}
+
 			//length += rendered.textContent.length; //Textlength in page, Prende solo la lunghezza del testo, se ha un container, giustamente non prende niente
 			// Check if layout has content yet
 			if (!hasRenderedContent) {
@@ -327,6 +357,43 @@ class Layout {
 		//return newBreakToken;
 	}
 
+	getBoundingRect(element) {
+
+		var style = window.getComputedStyle(element); 
+		var margin = {
+			left: parseInt(style["margin-left"]),
+			right: parseInt(style["margin-right"]),
+			top: parseInt(style["margin-top"]),
+			bottom: parseInt(style["margin-bottom"])
+		};
+		var padding = {
+			left: parseInt(style["padding-left"]),
+			right: parseInt(style["padding-right"]),
+			top: parseInt(style["padding-top"]),
+			bottom: parseInt(style["padding-bottom"])
+		};
+		var border = {
+			left: parseInt(style["border-left"]),
+			right: parseInt(style["border-right"]),
+			top: parseInt(style["border-top"]),
+			bottom: parseInt(style["border-bottom"])
+		};
+		
+		
+		var rect = element.getBoundingClientRect();
+		rect = {
+			left: rect.left - margin.left,
+			right: rect.right - margin.right - padding.left - padding.right,
+			top: rect.top - margin.top,
+			bottom: rect.bottom - margin.bottom - padding.top - padding.bottom - border.bottom  
+		};
+		rect.width = rect.right - rect.left;
+		rect.height = rect.bottom - rect.top;
+		
+		return {rect,margin};
+		
+	};
+
 
 	createBlock(block,rendered,renderedBounding,lines,type){
 
@@ -334,7 +401,16 @@ class Layout {
 		block.ref = rendered.getAttribute("data-ref");
 		block.type = type;
 		block.width = renderedBounding.width;
-		block.height = renderedBounding.height;
+		if(rendered.tagName !== "DIV"){
+
+			block.height = renderedBounding.height;
+
+		}else{
+
+			let rect = this.getBoundingRect(rendered);
+
+			block.height = renderedBounding.height + rect.margin.top + rect.margin.bottom;
+		}
 		block.left = renderedBounding.left;
 		block.right = renderedBounding.right;
 
@@ -469,6 +545,12 @@ class Layout {
 		return lines;
 	}
 
+	getBoundingDivRect(node,source,wrapper){
+
+
+
+	}
+
 
 	getSequence(blocks, bounds = this.bounds) {
 
@@ -593,12 +675,14 @@ class Layout {
 
 								if(score.linesBefore != 0){
 									beforeBreakPar.lines = score.linesBefore;
+									beforeBreakPar.height = prop.height - score.overflow;
 
 									//Aggiungo il blocco beforeBreak
 									referenceSequence.pages[referenceSequence.pages.length - 1].push(beforeBreakPar);
 								}
 
 								afterBreakPar.lines = score.linesAfter;
+								afterBreakPar.height = score.overflow;
 								afterBreakPar.complete = true;
 
 								//Aggiungo la nuova pagina con il blocco afterBreak
@@ -694,6 +778,7 @@ class Layout {
 			tag: "",
 			ref: "",
 			lines: 0,
+			height: 0,
 			type: "",
 			complete: true
 		};
@@ -707,6 +792,7 @@ class Layout {
 			paragraph.complete = false;
 		} else {
 			paragraph.lines = prop.lines.length;
+			paragraph.height = prop.height;
 		}
 
 		return paragraph;
